@@ -1,0 +1,31 @@
+name: Build Check
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+    
+    - name: Install Pebble SDK
+      run: |
+        pip install pebble-tool
+        sudo apt-get update
+        sudo apt-get install -y gcc-arm-none-eabi
+        
+    - name: Install Pebble SDK
+      run: pebble sdk install latest
+      
+    - name: Build Pebble App
+      run: pebble build
