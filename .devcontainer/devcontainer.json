@@ -25,5 +25,13 @@
 
   "forwardPorts": [3000, 8000],
 
+  "mounts": [
+    "source=pebble-sdk-cache,target=/home/codespace/.pebble-sdk,type=volume"
+  ],
+  
+  "containerEnv": {
+    "PEBBLE_SDK_ROOT": "/home/codespace/.pebble-sdk"
+  },
+
   "remoteUser": "codespace"
 }

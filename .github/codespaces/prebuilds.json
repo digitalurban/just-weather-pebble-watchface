@@ -1,0 +1,12 @@
+{
+  "prebuild": {
+    "enabled": true,
+    "branches": ["main"],
+    "triggers": {
+      "push": true,
+      "configuration": true,
+      "schedule": false
+    },
+    "devcontainer_path": ".devcontainer/devcontainer.json"
+  }
+}
