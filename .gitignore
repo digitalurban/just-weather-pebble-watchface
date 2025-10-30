@@ -5,3 +5,6 @@
 
 # Waf lock file
 .lock-waf*
+
+# VSCode
+*.code-workspace
