@@ -47,10 +47,9 @@ Pebble.addEventListener('ready', function(e) {
     return 'Unknown';
   }
 
-  // --- 3.5. Reverse Geocoding (NEW VERSION) ---
+  // --- 3.5. Reverse Geocoding ---
   function reverseGeocode(lat, lon, callback) {
-    // This URL points to the Open-Meteo geocoder
-    var url = 'https://geocoding-api.open-meteo.com/v1/reverse?latitude=' + encodeURIComponent(lat) + '&longitude=' + encodeURIComponent(lon) + '&count=1&language=en';
+    var url = 'https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=' + encodeURIComponent(lat) + '&longitude=' + encodeURIComponent(lon) + '&localityLanguage=en';
     
     console.log('[JS] Reverse geocoding: ' + url);
 
@@ -64,16 +63,13 @@ Pebble.addEventListener('ready', function(e) {
         try {
           var data = JSON.parse(xhr.responseText);
           var locationName = 'Unknown';
-          
-          // This API returns a 'results' array
-          if (data && data.results && data.results.length > 0) {
-            // 'name' is usually the most specific place (e.g., "Fincham")
-            locationName = data.results[0].name; 
+          if (data && data.city) {
+            locationName = data.city;
+          } else if (data && data.locality) {
+            locationName = data.locality;
           }
-          
           console.log('[JS] Reverse geocoding result: ' + locationName);
           callback(locationName);
-
         } catch (ex) {
           console.log('[JS] Error parsing reverse geocode response: ' + ex);
           callback('Unknown');
