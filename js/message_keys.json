@@ -1,0 +1,11 @@
+{
+  "PRESSURE": 0,
+  "TEMPERATURE": 1,
+  "CONDITIONS": 2,
+  "HUMIDITY": 3,
+  "WIND": 4,
+  "PRECIP": 5,
+  "LOCATION": 6,
+  "PRESSURE_TREND": 7,
+  "PRESSURE_TEST": 8
+}

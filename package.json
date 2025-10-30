@@ -1,0 +1,34 @@
+{
+  "name": "Just Weather",
+  "author": "DigtialUrban",
+  "version": "1.0.0",
+  "keywords": ["pebble-app"],
+  "private": true,
+  "dependencies": {},
+  "pebble": {
+    "displayName": "Just Weather",
+    "uuid": "00000000-0000-0000-0000-000000000001",
+    "sdkVersion": "3",
+    "enableMultiJS": true,
+    "main": "src/pkjs/app.js", 
+    "targetPlatforms": [
+      "aplite",
+      "basalt",
+      "chalk",
+      "diorite",
+      "emery"
+    ],
+    "watchapp": {
+      "watchface": true
+    },
+    "resources": {
+      "media": []
+    },
+    "capabilities": [
+      "location"
+    ],
+    "messageKeys": {
+      "PRESSURE": 0
+    }
+  }
+}
