@@ -1,0 +1,7 @@
+# Pebble build files
+/build/
+/downloads/
+/releases/
+
+# Waf lock file
+.lock-waf*
