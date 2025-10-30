@@ -12,7 +12,8 @@
     "enableMultiJS": true,
     "main": "src/pkjs/app.js", 
     "targetPlatforms": [
-      "diorite"
+      "diorite",
+      "basalt"
     ],
     "watchapp": {
       "watchface": true
