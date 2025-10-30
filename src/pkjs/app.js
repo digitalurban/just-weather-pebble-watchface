@@ -47,14 +47,24 @@ Pebble.addEventListener('ready', function(e) {
     return 'Unknown';
   }
 
-  // --- 3.5. Reverse Geocoding ---
+  // --- 3.5. Reverse Geocoding (NEW: Using Nominatim for better accuracy) ---
   function reverseGeocode(lat, lon, callback) {
-    var url = 'https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=' + encodeURIComponent(lat) + '&longitude=' + encodeURIComponent(lon) + '&localityLanguage=en';
+    // Use Nominatim (OpenStreetMap) for more detailed, local results
+    var url = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2' +
+              '&lat=' + encodeURIComponent(lat) +
+              '&lon=' + encodeURIComponent(lon) +
+              '&accept-language=en';
     
-    console.log('[JS] Reverse geocoding: ' + url);
+    console.log('[JS] Reverse geocoding (Nominatim): ' + url);
 
     var xhr = new XMLHttpRequest();
     xhr.timeout = 10000; // 10 second timeout
+    
+    xhr.open('GET', url, true);
+    
+    // IMPORTANT: Nominatim's usage policy requires a valid User-Agent.
+    // We must set this header or we will be blocked.
+    xhr.setRequestHeader('User-Agent', 'Just Weather Pebble Face/1.2 (https://github.com/digitalurban/just-weather-pebble-watchface)');
 
     xhr.onreadystatechange = function() {
       if (xhr.readyState !== 4) return;
@@ -63,11 +73,29 @@ Pebble.addEventListener('ready', function(e) {
         try {
           var data = JSON.parse(xhr.responseText);
           var locationName = 'Unknown';
-          if (data && data.city) {
-            locationName = data.city;
-          } else if (data && data.locality) {
-            locationName = data.locality;
+
+          // --- New Parsing Logic for Nominatim ---
+          // Try to find the most local name possible
+          if (data && data.address) {
+            if (data.address.village) {
+              locationName = data.address.village; // e.g., "Fincham"
+            } else if (data.address.hamlet) {
+              locationName = data.address.hamlet;
+            } else if (data.address.suburb) {
+              locationName = data.address.suburb;
+            } else if (data.address.town) {
+              locationName = data.address.town;
+            } else if (data.address.city) {
+              locationName = data.address.city; // e.g., "King's Lynn"
+            } else if (data.address.county) {
+              locationName = data.address.county;
+            }
+          } else if (data && data.display_name) {
+            // Fallback to just the first part of the full name
+            locationName = data.display_name.split(',')[0];
           }
+          // --- End of New Parsing Logic ---
+
           console.log('[JS] Reverse geocoding result: ' + locationName);
           callback(locationName);
         } catch (ex) {
@@ -90,7 +118,6 @@ Pebble.addEventListener('ready', function(e) {
       callback('Unknown');
     };
     
-    xhr.open('GET', url, true);
     xhr.send();
   }
 
@@ -213,6 +240,8 @@ Pebble.addEventListener('ready', function(e) {
           var lat = position.coords.latitude;
           var lon = position.coords.longitude;
           console.log('[JS] Geolocation success: lat=' + lat + ' lon=' + lon);
+          
+          // CORRECT: The weather fetch is now INSIDE the callback.
           reverseGeocode(lat, lon, function(locationName) {
             fetchPressureFromOpenMeteo(lat, lon, locationName);
           });

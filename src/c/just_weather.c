@@ -30,7 +30,6 @@ static TextLayer *s_wind_precip_layer;
 static char s_pressure_buffer[16];
 static char s_temp_cond_buffer[48];
 static char s_wind_precip_buffer[40];
-static char s_location_buffer[32];
 
 // --- AppMessage Handlers --- //
 
@@ -78,85 +77,96 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
         int t = (int)trend_tuple->value->int32; /* tenths */
         char sign = (t >= 0) ? '+' : '-';
         int a = t >= 0 ? t : -t;
-        int whole = a / 10;
-        int tenth = a % 10;
-        snprintf(trend_suffix, sizeof(trend_suffix), " %c%d.%d", sign, whole, tenth);
+        snprintf(trend_suffix, sizeof(trend_suffix), " %c%d.%d", sign, a / 10, a % 10);
       }
     }
 
-    // Format the string for display (pressure plus optional trend)
+    // Format the pressure into our buffer with the trend suffix
     snprintf(s_pressure_buffer, sizeof(s_pressure_buffer), "%d hPa%s", pressure_val, trend_suffix);
 
-    // Set the text on our pressure layer
+    // Set the text on our Pressure TextLayer
     text_layer_set_text(s_pressure_layer, s_pressure_buffer);
   } else {
-    // Log for diagnostics when the expected key isn't present
+    // Log for diagnosis (the message came in but no PRESSURE tuple was found)
     APP_LOG(APP_LOG_LEVEL_INFO, "inbox_received_callback: no PRESSURE tuple found in incoming message");
   }
-  // Also handle temperature and conditions (may arrive together or separately)
+
+  /* Additional tuples: temperature, conditions, location, wind, precip */
   Tuple *temp_tuple = dict_find(iterator, MESSAGE_KEY_TEMPERATURE);
   Tuple *cond_tuple = dict_find(iterator, MESSAGE_KEY_CONDITIONS);
-
-  // Handle temperature and conditions on the same line
-  if (temp_tuple && cond_tuple && cond_tuple->value && cond_tuple->value->cstring) {
-    int temp_val = (int)temp_tuple->value->int32;
-    const char *cond_str = cond_tuple->value->cstring;
-    snprintf(s_temp_cond_buffer, sizeof(s_temp_cond_buffer), "%d°C, %s", temp_val, cond_str);
-    text_layer_set_text(s_temp_cond_layer, s_temp_cond_buffer);
-  } else if (temp_tuple) {
-    int temp_val = (int)temp_tuple->value->int32;
-    snprintf(s_temp_cond_buffer, sizeof(s_temp_cond_buffer), "%d°C", temp_val);
-    text_layer_set_text(s_temp_cond_layer, s_temp_cond_buffer);
-  } else if (cond_tuple && cond_tuple->value && cond_tuple->value->cstring) {
-    const char *cond_str = cond_tuple->value->cstring;
-    snprintf(s_temp_cond_buffer, sizeof(s_temp_cond_buffer), "%s", cond_str);
-    text_layer_set_text(s_temp_cond_layer, s_temp_cond_buffer);
-  }
-  // Location
   Tuple *loc_tuple = dict_find(iterator, MESSAGE_KEY_LOCATION);
-  if (loc_tuple && loc_tuple->value && loc_tuple->value->cstring) {
-    snprintf(s_location_buffer, sizeof(s_location_buffer), "%s", loc_tuple->value->cstring);
-    text_layer_set_text(s_location_layer, s_location_buffer);
-  }
-  // Also handle wind and precipitation (humidity removed)
   Tuple *wind_tuple = dict_find(iterator, MESSAGE_KEY_WIND);
   Tuple *precip_tuple = dict_find(iterator, MESSAGE_KEY_PRECIP);
 
-  if (wind_tuple && precip_tuple) {
-    int wind_val = (int)wind_tuple->value->int32;
-    int precip_tenths = (int)precip_tuple->value->int32;
-    int whole = precip_tenths / 10;
-    int tenth = precip_tenths % 10;
-    if (tenth == 0) {
-      snprintf(s_wind_precip_buffer, sizeof(s_wind_precip_buffer), "%d mph • %dmm", wind_val, whole);
+  // Location
+  if (loc_tuple && loc_tuple->type == TUPLE_CSTRING) {
+    text_layer_set_text(s_location_layer, loc_tuple->value->cstring);
+  }
+
+  // Temperature and Conditions (combined display)
+  if (temp_tuple && cond_tuple) {
+    int temp_c = (int)temp_tuple->value->int32;
+    char *cond_str = cond_tuple->value->cstring;
+    if (cond_str) {
+      snprintf(s_temp_cond_buffer, sizeof(s_temp_cond_buffer), "%d°C • %s", temp_c, cond_str);
     } else {
-      if (tenth < 0) tenth = -tenth;
-      snprintf(s_wind_precip_buffer, sizeof(s_wind_precip_buffer), "%d mph • %d.%dmm", wind_val, whole, tenth);
+      snprintf(s_temp_cond_buffer, sizeof(s_temp_cond_buffer), "%d°C", temp_c);
     }
-    text_layer_set_text(s_wind_precip_layer, s_wind_precip_buffer);
-  } else if (wind_tuple) {
-    int wind_val = (int)wind_tuple->value->int32;
-    snprintf(s_wind_precip_buffer, sizeof(s_wind_precip_buffer), "%d mph", wind_val);
-    text_layer_set_text(s_wind_precip_layer, s_wind_precip_buffer);
-  } else if (precip_tuple) {
-    int precip_tenths = (int)precip_tuple->value->int32;
-    int whole = precip_tenths / 10;
-    int tenth = precip_tenths % 10;
-    if (tenth == 0) {
-      snprintf(s_wind_precip_buffer, sizeof(s_wind_precip_buffer), "%dmm", whole);
-    } else {
-      if (tenth < 0) tenth = -tenth;
-      snprintf(s_wind_precip_buffer, sizeof(s_wind_precip_buffer), "%d.%dmm", whole, tenth);
+    text_layer_set_text(s_temp_cond_layer, s_temp_cond_buffer);
+  }
+
+  // Wind and Precip (combined display)
+  /* Handle wind and precip data - can be integers or strings, and display even if only one is available */
+  char wind_display[20] = "";
+  char precip_display[20] = "";
+  
+  // Handle wind data (integer mph or string)
+  if (wind_tuple) {
+    if (wind_tuple->type == TUPLE_INT) {
+      int wind_mph = (int)wind_tuple->value->int32;
+      snprintf(wind_display, sizeof(wind_display), "%d mph", wind_mph);
+    } else if (wind_tuple->type == TUPLE_CSTRING && wind_tuple->value->cstring) {
+      snprintf(wind_display, sizeof(wind_display), "%s", wind_tuple->value->cstring);
     }
+  }
+  
+  // Handle precip data (integer tenths of mm or string)
+  if (precip_tuple) {
+    if (precip_tuple->type == TUPLE_INT) {
+      int precip_tenths = (int)precip_tuple->value->int32;
+      if (precip_tenths > 0) {
+        snprintf(precip_display, sizeof(precip_display), "%.1f mm", precip_tenths / 10.0);
+      } else {
+        snprintf(precip_display, sizeof(precip_display), "0 mm");
+      }
+    } else if (precip_tuple->type == TUPLE_CSTRING && precip_tuple->value->cstring) {
+      snprintf(precip_display, sizeof(precip_display), "%s", precip_tuple->value->cstring);
+    }
+  }
+  
+  // Display wind and/or precip
+  if (strlen(wind_display) > 0 && strlen(precip_display) > 0) {
+    snprintf(s_wind_precip_buffer, sizeof(s_wind_precip_buffer), "%s • %s", wind_display, precip_display);
     text_layer_set_text(s_wind_precip_layer, s_wind_precip_buffer);
+  } else if (strlen(wind_display) > 0) {
+    text_layer_set_text(s_wind_precip_layer, wind_display);
+  } else if (strlen(precip_display) > 0) {
+    text_layer_set_text(s_wind_precip_layer, precip_display);
   }
 }
 
-// --- Clock Handlers --- //
+static void inbox_dropped_callback(AppMessageResult reason, void *context) {
+  APP_LOG(APP_LOG_LEVEL_ERROR, "Message dropped!");
+}
 
-// This function is called every minute
+static void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResult reason, void *context) {
+  APP_LOG(APP_LOG_LEVEL_ERROR, "Outbox send failed!");
+}
+
+// --- Clock Update Handler --- //
+
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
-  // Create a buffer to hold the time string
+  // Use a static buffer so we don't keep it on the stack
   static char s_time_buffer[8]; // "00:00"
 
   // Format the time into the buffer
@@ -176,48 +186,39 @@ static void main_window_load(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
 
-  // Create the Time TextLayer (make visually larger by increasing layer height).
-  // We'll aim for a tall time area (160px) to make the time much bigger, but
-  // clamp it so it never overflows smaller screens. The location will sit
-  // directly below the time area and other weather layers will flow after.
-    /* Compute available space so the enlarged time area doesn't push other
-       UI elements off-screen. Reserve space for location + pressure + temp +
-       extra rows and small gaps. Then clamp the time height to a reasonable
-       min/max so it still looks good on very small screens. We'll anchor the
-       weather/info rows to the bottom so they never get clipped. */
-  int location_h = 24;
-  int temp_cond_h = 24;
-  int pressure_h = 24;
-  int wind_precip_h = 24;
-    int gap = 2; // gap between elements
-    int top_margin = 0;
-    int bottom_margin = 0;
-  /* Bottom area includes all data layers and bottom margin */
-  int bottom_area = location_h + gap + temp_cond_h + gap + pressure_h + gap + wind_precip_h + bottom_margin;
-    /* Max time is what's left after reserving bottom area */
-    int max_time = (int)bounds.size.h - bottom_area;
-    if (max_time < 42) max_time = 42; /* ensure minimum room */
-    int desired_time_height = max_time;
-    s_time_layer = text_layer_create(GRect(0, top_margin, bounds.size.w, desired_time_height));
+  // This is a simple variable to add padding from the top of the screen.
+  // Reduce padding to move text up and prevent clipping
+  const int vertical_padding = -12;
+
+  // Define heights for each text layer - increased to prevent font clipping
+  int time_h = 52; // Height for the time font
+  int location_h = 28;  // Increased from 24 to prevent clipping
+  int temp_cond_h = 28; // Increased from 24 to prevent clipping  
+  int pressure_h = 28;  // Increased from 24 to prevent clipping
+  int wind_precip_h = 28; // Increased from 24 to prevent clipping
+  int gap = 2; // Gap between data fields
+
+  // --- Time Layer ---
+  // Y position starts with padding, but move time down by 5 pixels
+  int current_y = vertical_padding + 5;
+  s_time_layer = text_layer_create(GRect(0, current_y, bounds.size.w, time_h));
   text_layer_set_background_color(s_time_layer, GColorClear);
   text_layer_set_text_color(s_time_layer, GColorBlack);
-  // This line automatically chooses the right font for the watch
   text_layer_set_font(s_time_layer, fonts_get_system_font(
     PBL_IF_COLOR_ELSE(
-      FONT_KEY_BITHAM_42_BOLD,      // This is a great, bold font for COLOR watches
-      FONT_KEY_LECO_42_NUMBERS      // This is the B&W font you are already using
+      FONT_KEY_BITHAM_42_BOLD,
+      FONT_KEY_LECO_42_NUMBERS
     )
   ));
-  const char *s_font_used = PBL_IF_COLOR_ELSE("BITHAM_42_BOLD", "LECO_42");
-  APP_LOG(APP_LOG_LEVEL_INFO, "Time layer height=%d, font=%s", desired_time_height, s_font_used);
   text_layer_set_text_alignment(s_time_layer, GTextAlignmentCenter);
   layer_add_child(window_layer, text_layer_get_layer(s_time_layer));
 
   // --- Data Layers ---
-  int base_y = desired_time_height - 20; // Move up to create space
+  // Reset current_y to original position for data layers (ignore time offset)
+  current_y = vertical_padding + time_h;
 
   // Location
-  s_location_layer = text_layer_create(GRect(0, base_y, bounds.size.w, location_h));
+  s_location_layer = text_layer_create(GRect(0, current_y, bounds.size.w, location_h));
   text_layer_set_background_color(s_location_layer, GColorClear);
   text_layer_set_text_color(s_location_layer, GColorBlack);
   text_layer_set_font(s_location_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
@@ -225,27 +226,30 @@ static void main_window_load(Window *window) {
   text_layer_set_overflow_mode(s_location_layer, GTextOverflowModeTrailingEllipsis);
   text_layer_set_text(s_location_layer, "");
   layer_add_child(window_layer, text_layer_get_layer(s_location_layer));
+  current_y += location_h + gap;
 
   // Temperature and conditions
-  s_temp_cond_layer = text_layer_create(GRect(0, base_y + location_h + gap, bounds.size.w, temp_cond_h));
+  s_temp_cond_layer = text_layer_create(GRect(0, current_y, bounds.size.w, temp_cond_h));
   text_layer_set_background_color(s_temp_cond_layer, GColorClear);
   text_layer_set_text_color(s_temp_cond_layer, GColorBlack);
   text_layer_set_font(s_temp_cond_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
   text_layer_set_text_alignment(s_temp_cond_layer, GTextAlignmentCenter);
   text_layer_set_text(s_temp_cond_layer, "");
   layer_add_child(window_layer, text_layer_get_layer(s_temp_cond_layer));
+  current_y += temp_cond_h + gap;
 
   // Pressure
-  s_pressure_layer = text_layer_create(GRect(0, base_y + location_h + gap + temp_cond_h + gap, bounds.size.w, pressure_h));
+  s_pressure_layer = text_layer_create(GRect(0, current_y, bounds.size.w, pressure_h));
   text_layer_set_background_color(s_pressure_layer, GColorClear);
   text_layer_set_text_color(s_pressure_layer, GColorBlack);
   text_layer_set_font(s_pressure_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
   text_layer_set_text_alignment(s_pressure_layer, GTextAlignmentCenter);
   text_layer_set_text(s_pressure_layer, "Loading..."); // Default text
   layer_add_child(window_layer, text_layer_get_layer(s_pressure_layer));
+  current_y += pressure_h + gap;
 
   // Wind and precipitation
-  s_wind_precip_layer = text_layer_create(GRect(0, base_y + location_h + gap + temp_cond_h + gap + pressure_h + gap, bounds.size.w, wind_precip_h));
+  s_wind_precip_layer = text_layer_create(GRect(0, current_y, bounds.size.w, wind_precip_h));
   text_layer_set_background_color(s_wind_precip_layer, GColorClear);
   text_layer_set_text_color(s_wind_precip_layer, GColorBlack);
   text_layer_set_font(s_wind_precip_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
@@ -283,6 +287,8 @@ static void init() {
 
   // Register AppMessage handlers
   app_message_register_inbox_received(inbox_received_callback);
+  app_message_register_inbox_dropped(inbox_dropped_callback);
+  app_message_register_outbox_failed(outbox_failed_callback);
   
   // Open AppMessage to be ready to receive data
   // Use smaller, reasonable buffer sizes to avoid large heap usage.

@@ -8,17 +8,28 @@
 
 A clean and simple watch face for Pebble smartwatches that provides the current time and essential weather information at a glance.
 
+## What's New in Version 1.2.0
+
+* **Enhanced Geolocation System:** Upgraded to Nominatim (OpenStreetMap) for more accurate and detailed location detection
+* **Improved Wind & Rain Display:** Fixed display issues - now shows wind and precipitation data reliably at the bottom of the watch face
+* **Better Layout & Typography:** Optimized text positioning to prevent font clipping and ensure all data fits properly on screen
+* **Enhanced Data Handling:** Improved compatibility with different data formats for more reliable weather updates
+* **Smart Location Names:** Prioritizes the most relevant local place names (villages, neighborhoods) over generic city names
+
 ## Features
 
-* **Time:** Displays the current time in a large, easy-to-read font.
-* **Geolocation:** Automatically detects your current location to provide relevant weather data.
+* **Time:** Displays the current time in a large, easy-to-read font with optimized spacing.
+* **Enhanced Geolocation:** Automatically detects your current location with improved accuracy:
+    * Uses Nominatim (OpenStreetMap) for precise reverse geocoding
+    * Smart location detection prioritizing local names (village → hamlet → suburb → town → city → county)
+    * Robust error handling with London fallback coordinates
+    * Proper timeout handling (10 seconds) for reliable operation
 * **Current Weather:**
-    * **Location:** Shows the name of your current city.
-    * **Temperature:** Current temperature in Celsius.
+    * **Location:** Shows the most relevant local place name for your current position.
+    * **Temperature:** Current temperature in Celsius with weather conditions.
     * **Conditions:** A text description of the current weather (e.g., "Clear", "Partly Cloudy", "Rain").
-    * **Pressure:** Current atmospheric pressure in hPa, with a trend indicator.
-    * **Wind:** Current wind speed in mph.
-    * **Precipitation:** Expected precipitation in mm.
+    * **Pressure:** Current atmospheric pressure in hPa, with 3-hour trend indicator showing changes.
+    * **Wind & Precipitation:** Current wind speed in mph and precipitation amount in mm (displays even if only one is available).
 
 ## Technical Details
 
@@ -29,8 +40,8 @@ This project consists of two main parts:
 
 ### APIs Used
 
-* **Weather Data:** [Open-Meteo API](https://open-meteo.com/)
-* **Reverse Geocoding:** [BigDataCloud API](https://www.bigdatacloud.com/)
+* **Weather Data:** [Open-Meteo API](https://open-meteo.com/) - Provides current weather conditions, atmospheric pressure, wind speed, and precipitation data
+* **Reverse Geocoding:** [Nominatim (OpenStreetMap)](https://nominatim.openstreetmap.org/) - Converts GPS coordinates to human-readable location names with high accuracy
 
 ## Project Structure
 
