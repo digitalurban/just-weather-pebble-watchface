@@ -201,24 +201,14 @@ static void main_window_load(Window *window) {
     s_time_layer = text_layer_create(GRect(0, top_margin, bounds.size.w, desired_time_height));
   text_layer_set_background_color(s_time_layer, GColorClear);
   text_layer_set_text_color(s_time_layer, GColorBlack);
-  /* Some platforms (older/newer Pebble SDK targets) may not define
-     FONT_KEY_BITHAM_50_BOLD. Guard and provide fallbacks so the code
-     compiles across platforms (emery/basalt/etc). */
-#if defined(FONT_KEY_LECO_42_NUMBERS)
-  /* Prefer the LECO numeric font if present — use the 42-number variant */
-  text_layer_set_font(s_time_layer, fonts_get_system_font(FONT_KEY_LECO_42_NUMBERS));
-  const char *s_font_used = "LECO_42";
-#elif defined(FONT_KEY_BITHAM_42_LIGHT) /* BITHAM_50_BOLD is not a standard SDK font */
-  text_layer_set_font(s_time_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_LIGHT));
-  const char *s_font_used = "BITHAM_42_LIGHT";
-#elif defined(FONT_KEY_BITHAM_42_BOLD)
-  text_layer_set_font(s_time_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
-  const char *s_font_used = "BITHAM_42_BOLD";
-#else
-  /* Last-resort: use a commonly-available Gothic font */
-  text_layer_set_font(s_time_layer, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD));
-  const char *s_font_used = "GOTHIC_28_BOLD";
-#endif
+  // This line automatically chooses the right font for the watch
+  text_layer_set_font(s_time_layer, fonts_get_system_font(
+    PBL_IF_COLOR_ELSE(
+      FONT_KEY_BITHAM_42_BOLD,      // This is a great, bold font for COLOR watches
+      FONT_KEY_LECO_42_NUMBERS      // This is the B&W font you are already using
+    )
+  ));
+  const char *s_font_used = PBL_IF_COLOR_ELSE("BITHAM_42_BOLD", "LECO_42");
   APP_LOG(APP_LOG_LEVEL_INFO, "Time layer height=%d, font=%s", desired_time_height, s_font_used);
   text_layer_set_text_alignment(s_time_layer, GTextAlignmentCenter);
   layer_add_child(window_layer, text_layer_get_layer(s_time_layer));
