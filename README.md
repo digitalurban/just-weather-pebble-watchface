@@ -8,17 +8,27 @@
 
 A clean and simple watch face for Pebble smartwatches that provides the current time and essential weather information at a glance.
 
-## What's New in Version 1.2.0
+## What's New in Version 1.3.0
 
-* **Enhanced Geolocation System:** Upgraded to Nominatim (OpenStreetMap) for more accurate and detailed location detection
-* **Improved Wind & Rain Display:** Fixed display issues - now shows wind and precipitation data reliably at the bottom of the watch face
-* **Better Layout & Typography:** Optimized text positioning to prevent font clipping and ensure all data fits properly on screen
-* **Enhanced Data Handling:** Improved compatibility with different data formats for more reliable weather updates
-* **Smart Location Names:** Prioritizes the most relevant local place names (villages, neighborhoods) over generic city names
+* ⏰ **Hourly Vibration Feature:** Optional gentle vibration at the top of each hour for time awareness
+* ⚙️ **Configurable Settings:** Full settings page with unit conversions and preferences:
+  * Temperature units: Celsius (°C) or Fahrenheit (°F)
+  * Wind speed: mph or km/h
+  * Precipitation: millimeters (mm) or inches (in)
+  * Hourly vibration: Enable/disable hourly time alerts
+* 🔄 **Immediate Settings Updates:** All settings take effect instantly without app restart
+* 🐛 **Enhanced Settings Persistence:** Fixed settings loading/saving for reliable preference storage
+* 🌤️ **Comprehensive Weather Conditions:** Expanded to 25+ specific weather descriptions from Open-Meteo
 
 ## Features
 
 * **Time:** Displays the current time in a large, easy-to-read font with optimized spacing.
+* **Hourly Vibration:** Optional gentle vibration alert at the top of each hour for time awareness during meetings or focused work.
+* **Configurable Units:** Comprehensive settings for personalizing your weather display:
+    * **Temperature:** Switch between Celsius (°C) and Fahrenheit (°F)
+    * **Wind Speed:** Choose miles per hour (mph) or kilometers per hour (km/h)  
+    * **Precipitation:** Select millimeters (mm) or inches (in)
+    * **Immediate Updates:** All unit changes take effect instantly on your watch
 * **Enhanced Geolocation:** Automatically detects your current location with improved accuracy:
     * Uses Nominatim (OpenStreetMap) for precise reverse geocoding
     * Smart location detection prioritizing local names (village → hamlet → suburb → town → city → county)
@@ -26,10 +36,10 @@ A clean and simple watch face for Pebble smartwatches that provides the current 
     * Proper timeout handling (10 seconds) for reliable operation
 * **Current Weather:**
     * **Location:** Shows the most relevant local place name for your current position.
-    * **Temperature:** Current temperature in Celsius with weather conditions.
-    * **Conditions:** A text description of the current weather (e.g., "Clear", "Partly Cloudy", "Rain").
+    * **Temperature:** Current temperature with weather conditions (displayed in your preferred unit).
+    * **Conditions:** Detailed weather descriptions covering 25+ specific conditions from Open-Meteo (Clear Sky, Thunderstorm, Heavy Rain, etc.).
     * **Pressure:** Current atmospheric pressure in hPa, with 3-hour trend indicator showing changes.
-    * **Wind & Precipitation:** Current wind speed in mph and precipitation amount in mm (displays even if only one is available).
+    * **Wind & Precipitation:** Current wind speed and precipitation amount (displayed in your preferred units).
 
 ## Technical Details
 
@@ -37,6 +47,17 @@ This project consists of two main parts:
 
 1.  **The Watch Face (C):** The native application that runs on the Pebble watch. It is responsible for displaying the UI, managing the layout, and updating the time.
 2.  **The Companion App (JavaScript):** A JavaScript application that runs on the connected smartphone. It is responsible for fetching location data and making API calls to get weather information, which it then sends to the watch.
+
+## How to Configure Settings
+
+Access the settings page through your Pebble app or by long-pressing the select button on your watch:
+
+* **Temperature Units:** Choose between Celsius (°C) and Fahrenheit (°F)
+* **Wind Speed Units:** Select mph or km/h for wind speed display
+* **Precipitation Units:** Pick millimeters (mm) or inches (in) for rainfall measurements
+* **Hourly Vibration:** Enable or disable gentle vibration alerts at the top of each hour
+
+All changes take effect immediately - no need to restart the app!
 
 ### APIs Used
 

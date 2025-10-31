@@ -11,6 +11,11 @@
 #define MESSAGE_KEY_PRESSURE_TREND 7
 // Diagnostic/test key sent from the companion to indicate HTTPS/XHR test result
 #define MESSAGE_KEY_PRESSURE_TEST 8
+// Unit labels sent from JS to ensure correct display
+#define MESSAGE_KEY_TEMP_UNIT 9
+#define MESSAGE_KEY_WIND_UNIT 10  
+#define MESSAGE_KEY_PRECIP_UNIT 11
+#define MESSAGE_KEY_HOURLY_VIBRATION 12
 
 static Window *s_main_window;
 static TextLayer *s_time_layer;
@@ -30,6 +35,10 @@ static TextLayer *s_wind_precip_layer;
 static char s_pressure_buffer[16];
 static char s_temp_cond_buffer[48];
 static char s_wind_precip_buffer[40];
+
+// Hourly vibration settings
+static bool s_hourly_vibration_enabled = false;
+static int s_last_hour = -1;
 
 // --- AppMessage Handlers --- //
 
@@ -97,6 +106,15 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
   Tuple *loc_tuple = dict_find(iterator, MESSAGE_KEY_LOCATION);
   Tuple *wind_tuple = dict_find(iterator, MESSAGE_KEY_WIND);
   Tuple *precip_tuple = dict_find(iterator, MESSAGE_KEY_PRECIP);
+  
+  APP_LOG(APP_LOG_LEVEL_INFO, "Keys found: temp=%s cond=%s wind=%s precip=%s", 
+    temp_tuple ? "YES" : "NO", cond_tuple ? "YES" : "NO", wind_tuple ? "YES" : "NO", precip_tuple ? "YES" : "NO");
+
+  
+  // Unit labels
+  Tuple *temp_unit_tuple = dict_find(iterator, MESSAGE_KEY_TEMP_UNIT);
+  Tuple *wind_unit_tuple = dict_find(iterator, MESSAGE_KEY_WIND_UNIT);
+  Tuple *precip_unit_tuple = dict_find(iterator, MESSAGE_KEY_PRECIP_UNIT);
 
   // Location
   if (loc_tuple && loc_tuple->type == TUPLE_CSTRING) {
@@ -105,12 +123,19 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
 
   // Temperature and Conditions (combined display)
   if (temp_tuple && cond_tuple) {
-    int temp_c = (int)temp_tuple->value->int32;
+    int temp_val = (int)temp_tuple->value->int32;
     char *cond_str = cond_tuple->value->cstring;
+    
+    // Get temperature unit from JS (default to C)
+    char temp_unit[4] = "C";
+    if (temp_unit_tuple && temp_unit_tuple->type == TUPLE_CSTRING && temp_unit_tuple->value->cstring) {
+      snprintf(temp_unit, sizeof(temp_unit), "%s", temp_unit_tuple->value->cstring);
+    }
+    
     if (cond_str) {
-      snprintf(s_temp_cond_buffer, sizeof(s_temp_cond_buffer), "%d°C • %s", temp_c, cond_str);
+      snprintf(s_temp_cond_buffer, sizeof(s_temp_cond_buffer), "%d%s • %s", temp_val, temp_unit, cond_str);
     } else {
-      snprintf(s_temp_cond_buffer, sizeof(s_temp_cond_buffer), "%d°C", temp_c);
+      snprintf(s_temp_cond_buffer, sizeof(s_temp_cond_buffer), "%d%s", temp_val, temp_unit);
     }
     text_layer_set_text(s_temp_cond_layer, s_temp_cond_buffer);
   }
@@ -120,24 +145,52 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
   char wind_display[20] = "";
   char precip_display[20] = "";
   
-  // Handle wind data (integer mph or string)
+  // Handle wind data with explicit units
   if (wind_tuple) {
     if (wind_tuple->type == TUPLE_INT) {
-      int wind_mph = (int)wind_tuple->value->int32;
-      snprintf(wind_display, sizeof(wind_display), "%d mph", wind_mph);
+      int wind_val = (int)wind_tuple->value->int32;
+      
+      // Get wind unit from JS (default to mph)
+      char wind_unit[8] = "mph";
+      if (wind_unit_tuple && wind_unit_tuple->type == TUPLE_CSTRING && wind_unit_tuple->value->cstring) {
+        snprintf(wind_unit, sizeof(wind_unit), "%s", wind_unit_tuple->value->cstring);
+      }
+      
+      snprintf(wind_display, sizeof(wind_display), "%d %s", wind_val, wind_unit);
     } else if (wind_tuple->type == TUPLE_CSTRING && wind_tuple->value->cstring) {
       snprintf(wind_display, sizeof(wind_display), "%s", wind_tuple->value->cstring);
     }
   }
   
-  // Handle precip data (integer tenths of mm or string)
+  // Handle precip data with explicit units
   if (precip_tuple) {
     if (precip_tuple->type == TUPLE_INT) {
-      int precip_tenths = (int)precip_tuple->value->int32;
-      if (precip_tenths > 0) {
-        snprintf(precip_display, sizeof(precip_display), "%.1f mm", precip_tenths / 10.0);
+      int precip_val = (int)precip_tuple->value->int32;
+      
+      // Get precip unit from JS (default to mm)
+      char precip_unit[8] = "mm";
+      if (precip_unit_tuple && precip_unit_tuple->type == TUPLE_CSTRING && precip_unit_tuple->value->cstring) {
+        snprintf(precip_unit, sizeof(precip_unit), "%s", precip_unit_tuple->value->cstring);
+      }
+      
+      if (strcmp(precip_unit, "in") == 0) {
+        // Handle inches (sent as hundredths) - use integer arithmetic for Pebble
+        if (precip_val > 0) {
+          int whole = precip_val / 100;
+          int frac = precip_val % 100;
+          snprintf(precip_display, sizeof(precip_display), "%d.%02d %s", whole, frac, precip_unit);
+        } else {
+          snprintf(precip_display, sizeof(precip_display), "0 %s", precip_unit);
+        }
       } else {
-        snprintf(precip_display, sizeof(precip_display), "0 mm");
+        // Handle mm (sent as tenths) - use integer arithmetic for Pebble  
+        if (precip_val > 0) {
+          int whole = precip_val / 10;
+          int frac = precip_val % 10;
+          snprintf(precip_display, sizeof(precip_display), "%d.%d %s", whole, frac, precip_unit);
+        } else {
+          snprintf(precip_display, sizeof(precip_display), "0 %s", precip_unit);
+        }
       }
     } else if (precip_tuple->type == TUPLE_CSTRING && precip_tuple->value->cstring) {
       snprintf(precip_display, sizeof(precip_display), "%s", precip_tuple->value->cstring);
@@ -152,6 +205,16 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     text_layer_set_text(s_wind_precip_layer, wind_display);
   } else if (strlen(precip_display) > 0) {
     text_layer_set_text(s_wind_precip_layer, precip_display);
+  }
+  
+  // Handle hourly vibration setting
+  Tuple *vibration_tuple = dict_find(iterator, MESSAGE_KEY_HOURLY_VIBRATION);
+  if (vibration_tuple) {
+    if (vibration_tuple->type == TUPLE_INT) {
+      s_hourly_vibration_enabled = (vibration_tuple->value->int32 != 0);
+      APP_LOG(APP_LOG_LEVEL_INFO, "Hourly vibration setting: %s", 
+              s_hourly_vibration_enabled ? "enabled" : "disabled");
+    }
   }
 }
 
@@ -178,6 +241,22 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 
   // Set the text on our Time TextLayer
   text_layer_set_text(s_time_layer, s_time_buffer);
+  
+  // Check for hourly vibration
+  if (s_hourly_vibration_enabled) {
+    int current_hour = tick_time->tm_hour;
+    int current_minute = tick_time->tm_min;
+    
+    // Vibrate at the top of each hour (minute 0) if hour changed
+    if (current_minute == 0 && s_last_hour != current_hour) {
+      // Short, subtle vibration
+      vibes_short_pulse();
+      APP_LOG(APP_LOG_LEVEL_INFO, "Hourly vibration at %d:00", current_hour);
+    }
+    
+    // Update last hour
+    s_last_hour = current_hour;
+  }
 }
 
 // --- Window Load/Unload --- //

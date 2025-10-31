@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Just Weather Settings</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .setting-group {
+            margin-bottom: 25px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background-color: #fafafa;
+        }
+        .setting-label {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        input[type="radio"] {
+            margin: 0;
+        }
+        .button-group {
+            text-align: center;
+            margin-top: 30px;
+            gap: 15px;
+            display: flex;
+            justify-content: center;
+        }
+        button {
+            padding: 12px 25px;
+            font-size: 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .save-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .save-btn:hover {
+            background-color: #45a049;
+        }
+        .cancel-btn {
+            background-color: #f44336;
+            color: white;
+        }
+        .cancel-btn:hover {
+            background-color: #da190b;
+        }
+        .description {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⛅ Just Weather Settings</h1>
+        
+        <form id="settingsForm">
+            <div class="setting-group">
+                <div class="setting-label">Temperature Units</div>
+                <div class="radio-group">
+                    <div class="radio-option">
+                        <input type="radio" id="temp_celsius" name="temperature_unit" value="celsius" checked>
+                        <label for="temp_celsius">Celsius (°C)</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="temp_fahrenheit" name="temperature_unit" value="fahrenheit">
+                        <label for="temp_fahrenheit">Fahrenheit (°F)</label>
+                    </div>
+                </div>
+                <div class="description">Choose how temperature is displayed on your watch</div>
+            </div>
+
+            <div class="setting-group">
+                <div class="setting-label">Wind Speed Units</div>
+                <div class="radio-group">
+                    <div class="radio-option">
+                        <input type="radio" id="wind_mph" name="wind_unit" value="mph" checked>
+                        <label for="wind_mph">Miles per hour (mph)</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="wind_kph" name="wind_unit" value="kph">
+                        <label for="wind_kph">Kilometers per hour (km/h)</label>
+                    </div>
+                </div>
+                <div class="description">Choose wind speed measurement unit</div>
+            </div>
+
+            <div class="setting-group">
+                <div class="setting-label">Precipitation Units</div>
+                <div class="radio-group">
+                    <div class="radio-option">
+                        <input type="radio" id="precip_mm" name="precipitation_unit" value="mm" checked>
+                        <label for="precip_mm">Millimeters (mm)</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="precip_in" name="precipitation_unit" value="inches">
+                        <label for="precip_in">Inches (in)</label>
+                    </div>
+                </div>
+                <div class="description">Choose rainfall measurement unit</div>
+            </div>
+
+            <div class="button-group">
+                <button type="submit" class="save-btn">Save Settings</button>
+                <button type="button" class="cancel-btn" onclick="cancelSettings()">Cancel</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // Get URL parameters to read existing settings
+        function getQueryParam(param) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
+        }
+
+        // Load existing settings from URL parameters
+        function loadSettings() {
+            const tempUnit = getQueryParam('temperature_unit') || 'celsius';
+            const windUnit = getQueryParam('wind_unit') || 'mph';
+            const precipUnit = getQueryParam('precipitation_unit') || 'mm';
+
+            document.querySelector(`input[name="temperature_unit"][value="${tempUnit}"]`).checked = true;
+            document.querySelector(`input[name="wind_unit"][value="${windUnit}"]`).checked = true;
+            document.querySelector(`input[name="precipitation_unit"][value="${precipUnit}"]`).checked = true;
+        }
+
+        // Save settings and return to watch
+        function saveSettings() {
+            const settings = {
+                temperature_unit: document.querySelector('input[name="temperature_unit"]:checked').value,
+                wind_unit: document.querySelector('input[name="wind_unit"]:checked').value,
+                precipitation_unit: document.querySelector('input[name="precipitation_unit"]:checked').value
+            };
+
+            // Send settings back to the Pebble
+            const returnUrl = getQueryParam('return_to') || 'pebblejs://close#' + encodeURIComponent(JSON.stringify(settings));
+            document.location = returnUrl + encodeURIComponent(JSON.stringify(settings));
+        }
+
+        // Cancel and return to watch without saving
+        function cancelSettings() {
+            const returnUrl = getQueryParam('return_to') || 'pebblejs://close#';
+            document.location = returnUrl;
+        }
+
+        // Initialize form
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSettings();
+            
+            document.getElementById('settingsForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                saveSettings();
+            });
+        });
+    </script>
+</body>
+</html>
