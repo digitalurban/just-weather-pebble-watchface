@@ -8,21 +8,32 @@
 
 A clean and simple watch face for Pebble smartwatches that provides the current time and essential weather information at a glance.
 
-## What's New in Version 1.3.0
+## What's New in Version 1.4.0
 
+* 📊 **Visual Progress Indicator:** Real-time countdown showing time until next weather update (15-minute cycle)
+  * Elegant horizontal line with dot indicators showing elapsed time
+  * Customizable through settings - enable/disable as preferred
+  * **Enabled by default** to showcase the feature
+* 🌤️ **Fresh Weather Data:** Now uses forecast data 15 minutes ahead instead of current conditions for more up-to-date information
 * ⏰ **Hourly Vibration Feature:** Optional gentle vibration at the top of each hour for time awareness
-* ⚙️ **Configurable Settings:** Full settings page with unit conversions and preferences:
+* ⚙️ **Enhanced Configurable Settings:** Expanded settings page with new options:
   * Temperature units: Celsius (°C) or Fahrenheit (°F)
-  * Wind speed: mph or km/h
+  * Wind speed: mph or km/h  
   * Precipitation: millimeters (mm) or inches (in)
   * Hourly vibration: Enable/disable hourly time alerts
-* 🔄 **Immediate Settings Updates:** All settings take effect instantly without app restart
-* 🐛 **Enhanced Settings Persistence:** Fixed settings loading/saving for reliable preference storage
+  * **Update countdown:** Show/hide the weather update progress indicator
+* 🔄 **Dynamic Layout Management:** Progress indicator can be toggled on/off in real-time with perfect spacing
+* 🐛 **Enhanced Settings Persistence:** Improved settings loading/saving for reliable preference storage
 * 🌤️ **Comprehensive Weather Conditions:** Expanded to 25+ specific weather descriptions from Open-Meteo
 
 ## Features
 
 * **Time:** Displays the current time in a large, easy-to-read font with optimized spacing.
+* **Weather Update Progress:** Visual countdown indicator showing time until next weather refresh (15-minute cycle):
+    * Horizontal progress line with dot indicators  
+    * Shows elapsed time since last update with filled/empty dots
+    * Perfect spacing that integrates seamlessly with the watch face design
+    * **Optional:** Can be disabled for a cleaner look through settings
 * **Hourly Vibration:** Optional gentle vibration alert at the top of each hour for time awareness during meetings or focused work.
 * **Configurable Units:** Comprehensive settings for personalizing your weather display:
     * **Temperature:** Switch between Celsius (°C) and Fahrenheit (°F)
@@ -34,6 +45,10 @@ A clean and simple watch face for Pebble smartwatches that provides the current 
     * Smart location detection prioritizing local names (village → hamlet → suburb → town → city → county)
     * Robust error handling with London fallback coordinates
     * Proper timeout handling (10 seconds) for reliable operation
+* **Fresh Weather Data:** Enhanced data freshness using forecast-based updates:
+    * Uses hourly forecast data 15 minutes ahead instead of current conditions
+    * Provides more up-to-date weather information throughout the day
+    * Visual progress indicator shows time remaining until next update
 * **Current Weather:**
     * **Location:** Shows the most relevant local place name for your current position.
     * **Temperature:** Current temperature with weather conditions (displayed in your preferred unit).
@@ -56,8 +71,9 @@ Access the settings page through your Pebble app or by long-pressing the select 
 * **Wind Speed Units:** Select mph or km/h for wind speed display
 * **Precipitation Units:** Pick millimeters (mm) or inches (in) for rainfall measurements
 * **Hourly Vibration:** Enable or disable gentle vibration alerts at the top of each hour
+* **Update Countdown:** Show or hide the weather update progress indicator (enabled by default)
 
-All changes take effect immediately - no need to restart the app!
+All changes take effect immediately with dynamic layout adjustment - no need to restart the app!
 
 ### APIs Used
 

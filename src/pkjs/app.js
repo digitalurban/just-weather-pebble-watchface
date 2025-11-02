@@ -10,7 +10,8 @@ var settings = {
   temperature_unit: 'celsius',
   wind_unit: 'mph',
   precipitation_unit: 'mm',
-  hourly_vibration: false
+  hourly_vibration: false,
+  update_countdown: true
 };
 
 // Store last weather data for immediate re-sending when units change
@@ -45,6 +46,7 @@ function resendWeatherWithCurrentUnits() {
   dict[10] = settings.wind_unit === 'mph' ? 'mph' : 'kph'; // WIND_UNIT_KEY = 10
   dict[11] = settings.precipitation_unit === 'inches' ? 'in' : 'mm'; // PRECIP_UNIT_KEY = 11
   dict[12] = settings.hourly_vibration ? 1 : 0; // HOURLY_VIBRATION_KEY = 12
+  dict[13] = settings.update_countdown ? 1 : 0; // UPDATE_COUNTDOWN_KEY = 13
   
   console.log('[JS] Test message dict: ' + JSON.stringify(dict));
   
@@ -65,6 +67,7 @@ function loadSettings() {
       if (savedSettings.wind_unit) settings.wind_unit = savedSettings.wind_unit;
       if (savedSettings.precipitation_unit) settings.precipitation_unit = savedSettings.precipitation_unit;
       if (typeof savedSettings.hourly_vibration !== 'undefined') settings.hourly_vibration = savedSettings.hourly_vibration;
+      if (typeof savedSettings.update_countdown !== 'undefined') settings.update_countdown = savedSettings.update_countdown;
       console.log('[JS] Loaded settings:', JSON.stringify(settings));
     } catch (e) {
       console.log('[JS] Error loading settings, using defaults');
@@ -172,6 +175,7 @@ Pebble.addEventListener('ready', function(e) {
   var WIND_UNIT_KEY = (MessageKeys && typeof MessageKeys.WIND_UNIT !== 'undefined') ? MessageKeys.WIND_UNIT : 10;
   var PRECIP_UNIT_KEY = (MessageKeys && typeof MessageKeys.PRECIP_UNIT !== 'undefined') ? MessageKeys.PRECIP_UNIT : 11;
   var HOURLY_VIBRATION_KEY = (MessageKeys && typeof MessageKeys.HOURLY_VIBRATION !== 'undefined') ? MessageKeys.HOURLY_VIBRATION : 12;
+  var UPDATE_COUNTDOWN_KEY = (MessageKeys && typeof MessageKeys.UPDATE_COUNTDOWN !== 'undefined') ? MessageKeys.UPDATE_COUNTDOWN : 13;
 
   // --- 2. Weather Sending Helper ---
   function sendWeatherToWatch(pressureValue, tempValue, condText, humidityValue, windValue, precipValue, pressureTrend, locationName) {
@@ -228,10 +232,11 @@ Pebble.addEventListener('ready', function(e) {
     dict[WIND_UNIT_KEY] = getWindLabel();
     dict[PRECIP_UNIT_KEY] = getPrecipitationLabel();
     
-    // Send vibration setting
+    // Send settings
     dict[HOURLY_VIBRATION_KEY] = settings.hourly_vibration ? 1 : 0;
+    dict[UPDATE_COUNTDOWN_KEY] = settings.update_countdown ? 1 : 0;
     
-    console.log('[JS] Final message with units: temp=' + dict[TEMP_UNIT_KEY] + ', wind=' + dict[WIND_UNIT_KEY] + ', precip=' + dict[PRECIP_UNIT_KEY] + ', vibration=' + dict[HOURLY_VIBRATION_KEY]);
+    console.log('[JS] Final message with units: temp=' + dict[TEMP_UNIT_KEY] + ', wind=' + dict[WIND_UNIT_KEY] + ', precip=' + dict[PRECIP_UNIT_KEY] + ', vibration=' + dict[HOURLY_VIBRATION_KEY] + ', countdown=' + dict[UPDATE_COUNTDOWN_KEY]);
     console.log('[JS] Calling Pebble.sendAppMessage...');
     
     Pebble.sendAppMessage(dict,
@@ -617,6 +622,15 @@ button{padding:12px 25px;font-size:16px;border:none;border-radius:6px;cursor:poi
 </div>
 <div class="description">Watch will vibrate briefly at the top of each hour</div>
 </div>
+<div class="setting-group">
+<div class="setting-label">Update Countdown</div>
+<div class="radio-option">
+<input type="checkbox" id="update_countdown" name="update_countdown" ${settings.update_countdown ? 'checked' : ''}>
+<label for="update_countdown">Show weather update progress</label>
+</div>
+<div class="description">Display a progress line showing time until next weather update (15 minutes)</div>
+</div>
+<div class="button-group">
 <div class="button-group">
 <button type="submit" class="save-btn">Save Settings</button>
 <button type="button" class="cancel-btn" onclick="document.location='pebblejs://close#'">Cancel</button>
@@ -630,7 +644,8 @@ document.getElementById('settingsForm').addEventListener('submit', function(e) {
     temperature_unit: document.querySelector('input[name="temperature_unit"]:checked').value,
     wind_unit: document.querySelector('input[name="wind_unit"]:checked').value,
     precipitation_unit: document.querySelector('input[name="precipitation_unit"]:checked').value,
-    hourly_vibration: document.getElementById('hourly_vibration').checked
+    hourly_vibration: document.getElementById('hourly_vibration').checked,
+    update_countdown: document.getElementById('update_countdown').checked
   };
   document.location = 'pebblejs://close#' + encodeURIComponent(JSON.stringify(settings));
 });
@@ -662,6 +677,12 @@ Pebble.addEventListener('webviewclosed', function(e) {
         settings.hourly_vibration = newSettings.hourly_vibration;
       } else {
         console.log('[JS] hourly_vibration not found in new settings');
+      }
+      if (typeof newSettings.update_countdown !== 'undefined') {
+        console.log('[JS] Updating update_countdown from ' + settings.update_countdown + ' to ' + newSettings.update_countdown);
+        settings.update_countdown = newSettings.update_countdown;
+      } else {
+        console.log('[JS] update_countdown not found in new settings');
       }
       
       console.log('[JS] Updated settings: ' + JSON.stringify(settings));

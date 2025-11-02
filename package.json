@@ -1,7 +1,7 @@
 {
   "name": "just-weather",
   "author": "Digital Urban",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "keywords": ["pebble-app"],
   "private": true,
   "dependencies": {},
@@ -38,7 +38,8 @@
       "TEMP_UNIT": 9,
       "WIND_UNIT": 10,
       "PRECIP_UNIT": 11,
-      "HOURLY_VIBRATION": 12
+      "HOURLY_VIBRATION": 12,
+      "UPDATE_COUNTDOWN": 13
     }
   }
 }

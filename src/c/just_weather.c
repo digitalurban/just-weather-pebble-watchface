@@ -16,10 +16,12 @@
 #define MESSAGE_KEY_WIND_UNIT 10  
 #define MESSAGE_KEY_PRECIP_UNIT 11
 #define MESSAGE_KEY_HOURLY_VIBRATION 12
+#define MESSAGE_KEY_UPDATE_COUNTDOWN 13
 
 static Window *s_main_window;
 static TextLayer *s_time_layer;
 static TextLayer *s_location_layer;
+static Layer *s_update_progress_layer;
 static TextLayer *s_temp_cond_layer;
 static TextLayer *s_pressure_layer;
 static TextLayer *s_wind_precip_layer;
@@ -36,9 +38,18 @@ static char s_pressure_buffer[16];
 static char s_temp_cond_buffer[48];
 static char s_wind_precip_buffer[40];
 
+
 // Hourly vibration settings
 static bool s_hourly_vibration_enabled = false;
+static bool s_update_countdown_enabled = true;
 static int s_last_hour = -1;
+
+// Update progress tracking
+static time_t s_last_weather_update = 0;
+
+// --- Function Declarations --- //
+static void progress_layer_draw(Layer *layer, GContext *ctx);
+static int calculate_progress_layer_y_position(void);
 
 // --- AppMessage Handlers --- //
 
@@ -68,6 +79,9 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     // We have the pressure! Read it as an integer
     int pressure_val = (int)pressure_tuple->value->int32;
 
+    // Update the weather update timestamp
+    s_last_weather_update = time(NULL);
+    
     // Log the received pressure for diagnostics
     APP_LOG(APP_LOG_LEVEL_INFO, "inbox_received_callback: received PRESSURE=%d", pressure_val);
 
@@ -216,6 +230,81 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
               s_hourly_vibration_enabled ? "enabled" : "disabled");
     }
   }
+  
+  // Handle update countdown setting
+  Tuple *countdown_tuple = dict_find(iterator, MESSAGE_KEY_UPDATE_COUNTDOWN);
+  if (countdown_tuple) {
+    if (countdown_tuple->type == TUPLE_INT) {
+      bool old_countdown_enabled = s_update_countdown_enabled;
+      s_update_countdown_enabled = (countdown_tuple->value->int32 != 0);
+      APP_LOG(APP_LOG_LEVEL_INFO, "Update countdown setting: %s", 
+              s_update_countdown_enabled ? "enabled" : "disabled");
+      
+      // If countdown setting changed, adjust the UI dynamically
+      if (old_countdown_enabled != s_update_countdown_enabled) {
+        APP_LOG(APP_LOG_LEVEL_INFO, "Countdown setting changed - adjusting UI dynamically");
+        if (s_update_countdown_enabled) {
+          // Add progress layer
+          if (!s_update_progress_layer) {
+            Layer *window_layer = window_get_root_layer(s_main_window);
+            GRect bounds = layer_get_bounds(window_layer);
+            // Calculate proper Y position to maintain spacing
+            int progress_y = calculate_progress_layer_y_position();
+            s_update_progress_layer = layer_create(GRect(0, progress_y, bounds.size.w, 6));
+            layer_set_update_proc(s_update_progress_layer, progress_layer_draw);
+            layer_add_child(window_layer, s_update_progress_layer);
+            
+            // Move temperature/conditions layer down to add spacing below progress line
+            GRect temp_frame = layer_get_frame(text_layer_get_layer(s_temp_cond_layer));
+            int progress_h = 6;
+            int gap = 1; // Reduced from 2pt to 1pt
+            temp_frame.origin.y = progress_y + progress_h + gap; // Add 1pt gap below progress line
+            layer_set_frame(text_layer_get_layer(s_temp_cond_layer), temp_frame);
+            
+            // Also move the remaining layers down by the same amount
+            int shift_down = progress_h + gap;
+            GRect pressure_frame = layer_get_frame(text_layer_get_layer(s_pressure_layer));
+            pressure_frame.origin.y += shift_down;
+            layer_set_frame(text_layer_get_layer(s_pressure_layer), pressure_frame);
+            
+            GRect wind_frame = layer_get_frame(text_layer_get_layer(s_wind_precip_layer));
+            wind_frame.origin.y += shift_down;
+            layer_set_frame(text_layer_get_layer(s_wind_precip_layer), wind_frame);
+            
+            layer_mark_dirty(s_update_progress_layer);
+          }
+        } else {
+          // Remove progress layer and move temperature up to maintain equal spacing
+          if (s_update_progress_layer) {
+            // Move temperature/conditions to where progress line was (location + 2pt gap)
+            GRect location_frame = layer_get_frame(text_layer_get_layer(s_location_layer));
+            int gap = 2; // Standard gap used throughout layout
+            int new_temp_y = location_frame.origin.y + location_frame.size.h + gap;
+            
+            // Calculate how much we're moving up from current position
+            GRect temp_frame = layer_get_frame(text_layer_get_layer(s_temp_cond_layer));
+            int shift_up = temp_frame.origin.y - new_temp_y;
+            
+            // Move temperature layer to maintain equal spacing
+            temp_frame.origin.y = new_temp_y;
+            layer_set_frame(text_layer_get_layer(s_temp_cond_layer), temp_frame);
+            
+            // Move other layers up by the same amount to maintain their relative spacing
+            GRect pressure_frame = layer_get_frame(text_layer_get_layer(s_pressure_layer));
+            pressure_frame.origin.y -= shift_up;
+            layer_set_frame(text_layer_get_layer(s_pressure_layer), pressure_frame);
+            
+            GRect wind_frame = layer_get_frame(text_layer_get_layer(s_wind_precip_layer));
+            wind_frame.origin.y -= shift_up;
+            layer_set_frame(text_layer_get_layer(s_wind_precip_layer), wind_frame);
+            
+            layer_destroy(s_update_progress_layer);
+            s_update_progress_layer = NULL;
+          }
+        }
+      }
+    }
+  }
 }
 
 static void inbox_dropped_callback(AppMessageResult reason, void *context) {
@@ -224,6 +313,67 @@ static void inbox_dropped_callback(AppMessageResult reason, void *context) {
 
 static void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResult reason, void *context) {
   APP_LOG(APP_LOG_LEVEL_ERROR, "Outbox send failed!");
+}
+
+// --- Update Progress Handler --- //
+
+static void progress_layer_draw(Layer *layer, GContext *ctx) {
+  GRect bounds = layer_get_bounds(layer);
+  
+  // Draw a thin horizontal line across the width with centered progress dots
+  int line_y = bounds.size.h / 2; // Center vertically in the layer
+  int margin = 20; // Margins from left and right edges
+  int line_width = bounds.size.w - (2 * margin);
+  
+  // Set drawing color to black
+  graphics_context_set_stroke_color(ctx, GColorBlack);
+  graphics_context_set_fill_color(ctx, GColorBlack);
+  
+  // Draw the full base line from margin to margin
+  graphics_draw_line(ctx, GPoint(margin, line_y), GPoint(margin + line_width, line_y));
+  
+  // Calculate dot positioning - center 15 dots within the line
+  int dots_total_width = 14 * 8; // 14 spaces between 15 dots, 8px apart
+  int dots_start_x = margin + (line_width - dots_total_width) / 2; // Center the dots
+  
+  // Calculate how many dots to fill based on elapsed time
+  int filled_dots = 0;
+  if (s_last_weather_update != 0) {
+    time_t now = time(NULL);
+    int elapsed_minutes = (int)((now - s_last_weather_update) / 60);
+    filled_dots = elapsed_minutes % 15; // 0-14 filled dots
+  }
+  
+  // Draw progress dots centered on the line
+  for (int i = 0; i < 15; i++) {
+    int dot_x = dots_start_x + (i * 8); // 8px spacing between dots
+    if (i < filled_dots) {
+      // Filled dot - small filled circle
+      graphics_fill_circle(ctx, GPoint(dot_x, line_y), 2);
+    } else {
+      // Empty dot - small circle outline
+      graphics_draw_circle(ctx, GPoint(dot_x, line_y), 1);
+    }
+  }
+}
+
+static int calculate_progress_layer_y_position(void) {
+  // Match the original perfect layout: location_bottom + gap
+  // This is exactly how it was positioned in the original window_load
+  GRect location_frame = layer_get_frame(text_layer_get_layer(s_location_layer));
+  int gap = 2; // Same gap used in window_load
+  
+  // Original calculation: current_y += location_h + gap, then progress at current_y
+  int progress_y = location_frame.origin.y + location_frame.size.h + gap;
+  
+  return progress_y;
+}
+
+static void update_progress_bar() {
+  // Just trigger a redraw of the progress layer
+  if (s_update_progress_layer) {
+    layer_mark_dirty(s_update_progress_layer);
+  }
 }
 
 // --- Clock Update Handler --- //
@@ -241,6 +391,9 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 
   // Set the text on our Time TextLayer
   text_layer_set_text(s_time_layer, s_time_buffer);
+  
+  // Update the progress bar
+  update_progress_bar();
   
   // Check for hourly vibration
   if (s_hourly_vibration_enabled) {
@@ -294,7 +447,8 @@ static void main_window_load(Window *window) {
 
   // --- Data Layers ---
   // Reset current_y to original position for data layers (ignore time offset)
-  current_y = vertical_padding + time_h;
+  // Move data up by 5 pixels for better spacing
+  current_y = vertical_padding + time_h - 5;
 
   // Location
   s_location_layer = text_layer_create(GRect(0, current_y, bounds.size.w, location_h));
@@ -306,6 +460,17 @@ static void main_window_load(Window *window) {
   text_layer_set_text(s_location_layer, "");
   layer_add_child(window_layer, text_layer_get_layer(s_location_layer));
   current_y += location_h + gap;
+
+  // Update Progress Line - minimal 1pt line with dots (only if enabled)
+  if (s_update_countdown_enabled) {
+    int progress_h = 6; // Very thin line with minimal height
+    s_update_progress_layer = layer_create(GRect(0, current_y, bounds.size.w, progress_h));
+    layer_set_update_proc(s_update_progress_layer, progress_layer_draw);
+    layer_add_child(window_layer, s_update_progress_layer);
+    current_y += progress_h; // Minimal gap
+  } else {
+    s_update_progress_layer = NULL; // No progress layer when disabled
+  }
 
   // Temperature and conditions
   s_temp_cond_layer = text_layer_create(GRect(0, current_y, bounds.size.w, temp_cond_h));
@@ -338,9 +503,12 @@ static void main_window_load(Window *window) {
 }
 
 static void main_window_unload(Window *window) {
-  // Destroy the TextLayers to free up memory
+  // Destroy the TextLayers and custom layers to free up memory
   text_layer_destroy(s_time_layer);
   text_layer_destroy(s_location_layer);
+  if (s_update_progress_layer) {
+    layer_destroy(s_update_progress_layer);
+  }
   text_layer_destroy(s_temp_cond_layer);
   text_layer_destroy(s_pressure_layer);
   text_layer_destroy(s_wind_precip_layer);
