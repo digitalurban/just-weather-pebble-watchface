@@ -393,11 +393,12 @@ Pebble.addEventListener('ready', function(e) {
 
   // --- 4. Fetch Function (No Promises) ---
   function fetchPressureFromOpenMeteo(lat, lon, locationName) {
-    // Build minimized, direct HTTPS URL
+    // Build API URL to get forecast data instead of current (more up-to-date)
+    // We'll use the forecast for ~15 minutes from now for more current conditions
+    // This approach provides fresher data since "current" weather can be outdated
     var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + encodeURIComponent(lat) + '&longitude=' + encodeURIComponent(lon) + 
-              '&hourly=surface_pressure' + 
-              '&current=temperature_2m,weather_code,relative_humidity_2m,wind_speed_10m,precipitation' + 
-              '&forecast_hours=24' + // Get 24 hours of forecast for trend
+              '&hourly=surface_pressure,temperature_2m,weather_code,relative_humidity_2m,wind_speed_10m,precipitation' + 
+              '&forecast_hours=24' + // Get 24 hours of forecast data
               '&timeformat=unixtime&timezone=auto';
     
     console.log('[JS] Fetching Open-Meteo: ' + url);
@@ -424,37 +425,55 @@ Pebble.addEventListener('ready', function(e) {
           var pressure = undefined;
           var trendStr = undefined;
 
-          if (data && data.current) {
-            currentTemp = data.current.temperature_2m; // Always in Celsius from API
-            currentCondition = weatherCodeToString(data.current.weather_code);
-            humidity = data.current.relative_humidity_2m;
-            windSpeed = data.current.wind_speed_10m; // km/h from API
-            precipitation = data.current.precipitation; // mm from API
-          }
-
-          if (data && data.hourly && data.hourly.surface_pressure && data.hourly.time) {
+          // Use forecast data for more current conditions (15 minutes ahead)
+          if (data && data.hourly && data.hourly.time && data.hourly.time.length > 0) {
             var times = data.hourly.time;
-            var pressures = data.hourly.surface_pressure;
-            if (times.length > 0 && times.length === pressures.length) {
-              // Find entry closest to now
-              var now = Date.now();
-              var bestIdx = 0;
-              var bestDiff = Math.abs((times[0] * 1000) - now); // * 1000 because timeformat=unixtime (seconds)
-              for (var i = 1; i < times.length; i++) {
-                var diff = Math.abs((times[i] * 1000) - now);
-                if (diff < bestDiff) {
-                  bestDiff = diff;
-                  bestIdx = i;
-                }
+            var now = Date.now();
+            var target = now + (15 * 60 * 1000); // 15 minutes from now
+            
+            // Find forecast entry closest to 15 minutes from now
+            var bestIdx = 0;
+            var bestDiff = Math.abs((times[0] * 1000) - target);
+            for (var i = 1; i < times.length; i++) {
+              var diff = Math.abs((times[i] * 1000) - target);
+              if (diff < bestDiff) {
+                bestDiff = diff;
+                bestIdx = i;
               }
+            }
+            
+            console.log('[JS] Using forecast data index ' + bestIdx + ' (target: +15min from now)');
+            
+            // Extract weather data from the selected forecast point
+            if (data.hourly.temperature_2m && bestIdx < data.hourly.temperature_2m.length) {
+              currentTemp = data.hourly.temperature_2m[bestIdx];
+            }
+            if (data.hourly.weather_code && bestIdx < data.hourly.weather_code.length) {
+              currentCondition = weatherCodeToString(data.hourly.weather_code[bestIdx]);
+            }
+            if (data.hourly.relative_humidity_2m && bestIdx < data.hourly.relative_humidity_2m.length) {
+              humidity = data.hourly.relative_humidity_2m[bestIdx];
+            }
+            if (data.hourly.wind_speed_10m && bestIdx < data.hourly.wind_speed_10m.length) {
+              windSpeed = data.hourly.wind_speed_10m[bestIdx];
+            }
+            if (data.hourly.precipitation && bestIdx < data.hourly.precipitation.length) {
+              precipitation = data.hourly.precipitation[bestIdx];
+            }
+            
+            // Handle pressure data from the same forecast point
+            if (data.hourly.surface_pressure && bestIdx < data.hourly.surface_pressure.length) {
+              var pressures = data.hourly.surface_pressure;
               pressure = pressures[bestIdx];
-              console.log('[JS] Open-Meteo pressure (chosen index=' + bestIdx + '): ' + pressure + ' hPa');
+              console.log('[JS] Open-Meteo pressure (forecast index=' + bestIdx + '): ' + pressure + ' hPa');
 
-              // Calculate 3-hour trend
+              // Calculate 3-hour trend using forecast data
               var threeHoursAgo = (now / 1000) - (3 * 3600);
               var pastIdx = -1;
               var pastDiff = Infinity;
-              for (var j = 0; j < bestIdx; j++) {
+              
+              // Find the forecast point closest to 3 hours ago
+              for (var j = 0; j < times.length; j++) {
                 var d = Math.abs(times[j] - threeHoursAgo);
                 if (d < pastDiff) {
                   pastDiff = d;
@@ -462,11 +481,11 @@ Pebble.addEventListener('ready', function(e) {
                 }
               }
 
-              if (pastIdx !== -1) {
+              if (pastIdx !== -1 && pastIdx < pressures.length) {
                 var pastPressure = pressures[pastIdx];
                 var trend = pressure - pastPressure;
                 trendStr = (trend >= 0 ? '+' : '') + trend.toFixed(1);
-                console.log('[JS] Pressure trend (3hr): ' + trend.toFixed(1) + ' hPa');
+                console.log('[JS] Pressure trend (3hr forecast): ' + trend.toFixed(1) + ' hPa');
               }
             }
           }
