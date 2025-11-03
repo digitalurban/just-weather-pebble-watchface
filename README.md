@@ -13,7 +13,7 @@ A clean and simple watch face for Pebble smartwatches that provides the current 
 * �‍♂️ **Step Tracking Integration:** Complete fitness tracking with Health API integration
   * Real-time step count and distance display with minute-by-minute updates
   * Authentic Google Material Design walking icon positioned between step count and distance
-  * Miles/kilometers unit selection with precise decimal formatting (2 decimal places for miles, 1 for km)
+  * Miles/kilometers unit selection with consistent decimal formatting (1 decimal place for both units)
   * Show/hide steps toggle setting - replaces wind/precipitation line when enabled
   * Minimal battery impact - leverages existing minute timer for efficient updates
 * 🎯 **Smart Display Management:** Dynamic layout switching between weather and fitness data
@@ -56,7 +56,7 @@ A clean and simple watch face for Pebble smartwatches that provides the current 
     * **Wind & Precipitation:** Current wind speed and precipitation amount (displayed in your preferred units).
 * **Step Tracking (NEW):**
     * **Step Count:** Real-time daily step counter using Pebble Health API with minute-by-minute updates.
-    * **Distance:** Calculated walking distance with precise formatting (miles: 2 decimal places, kilometers: 1 decimal place).
+    * **Distance:** Calculated walking distance with consistent formatting (1 decimal place for both miles and kilometers).
     * **Google Material Design Icon:** Authentic directions_walk icon positioned cleanly between step count and distance.
     * **Smart Display:** Replaces wind/precipitation line when step tracking is enabled for clean, focused layout.
     * **Minimal Battery Impact:** Efficient updates leveraging existing minute timer - less than 1% additional battery drain.
