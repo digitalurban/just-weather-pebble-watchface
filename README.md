@@ -1,6 +1,6 @@
 # Just Weather - Pebble Watch Face
 
-![Just Weather Screenshot](https://github.com/digitalurban/just-weather-pebble-watchface/blob/main/Screenshot%202025-10-30%20at%2011.36.49.png?raw=true)
+![Just Weather Screenshot](https://github.com/digitalurban/just-weather-pebble-watchface/blob/main/JustWeather_loading.jpg?raw=true)
 
 **[Get it on the Rebble App Store](https://apps.rebble.io/en_US/application/69034d22d004720008412cf1)**
 
