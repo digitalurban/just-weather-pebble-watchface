@@ -478,17 +478,29 @@ static void update_step_display(void) {
     
     // Format step display - icon positioned between count and distance
     if (s_step_unit_miles) {
-      // Display miles with 1 decimal place - consistent with kilometers
+      // Display miles with 1 decimal place - adjusted spacing for better centering
       int whole_miles = s_current_step_distance / 10;
       int frac_miles = s_current_step_distance % 10;
       snprintf(s_step_display_buffer, sizeof(s_step_display_buffer), 
-               "%d      %d.%d mi", s_current_step_count, whole_miles, frac_miles);
+               " %d      %d.%d mi", s_current_step_count, whole_miles, frac_miles);
     } else {
-      // Display kilometers with 1 decimal place - wider spacing for icon
+      // Display kilometers with 1 decimal place - adjusted spacing for better centering
       int whole_km = s_current_step_distance / 10;
       int frac_km = s_current_step_distance % 10;
       snprintf(s_step_display_buffer, sizeof(s_step_display_buffer), 
-               "%d      %d.%d km", s_current_step_count, whole_km, frac_km);
+               " %d      %d.%d km", s_current_step_count, whole_km, frac_km);
+    }
+    
+    // Update icon position to center it properly in the gap
+    if (s_shoe_icon_layer) {
+      // Get the wind/precip layer position for vertical alignment
+      GRect text_frame = layer_get_frame(text_layer_get_layer(s_wind_precip_layer));
+      
+      // Position icon in the center of the screen horizontally
+      int icon_x = (144 - 16) / 2; // Center the 16px icon horizontally
+      
+      GRect icon_frame = GRect(icon_x, text_frame.origin.y + 9, 16, 16); // Align with text baseline
+      layer_set_frame(bitmap_layer_get_layer(s_shoe_icon_layer), icon_frame);
     }
     
     // Replace the wind/precip layer with step data
