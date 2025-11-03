@@ -11,7 +11,9 @@ var settings = {
   wind_unit: 'mph',
   precipitation_unit: 'mm',
   hourly_vibration: false,
-  update_countdown: true
+  update_countdown: true,
+  show_steps: false,
+  step_unit: 'miles'
 };
 
 // Store last weather data for immediate re-sending when units change
@@ -47,6 +49,8 @@ function resendWeatherWithCurrentUnits() {
   dict[11] = settings.precipitation_unit === 'inches' ? 'in' : 'mm'; // PRECIP_UNIT_KEY = 11
   dict[12] = settings.hourly_vibration ? 1 : 0; // HOURLY_VIBRATION_KEY = 12
   dict[13] = settings.update_countdown ? 1 : 0; // UPDATE_COUNTDOWN_KEY = 13
+  dict[14] = settings.show_steps ? 1 : 0; // SHOW_STEPS_KEY = 14  
+  dict[15] = settings.step_unit === 'miles' ? 1 : 0; // STEP_UNIT_KEY = 15
   
   console.log('[JS] Test message dict: ' + JSON.stringify(dict));
   
@@ -68,6 +72,8 @@ function loadSettings() {
       if (savedSettings.precipitation_unit) settings.precipitation_unit = savedSettings.precipitation_unit;
       if (typeof savedSettings.hourly_vibration !== 'undefined') settings.hourly_vibration = savedSettings.hourly_vibration;
       if (typeof savedSettings.update_countdown !== 'undefined') settings.update_countdown = savedSettings.update_countdown;
+      if (typeof savedSettings.show_steps !== 'undefined') settings.show_steps = savedSettings.show_steps;
+      if (savedSettings.step_unit) settings.step_unit = savedSettings.step_unit;
       console.log('[JS] Loaded settings:', JSON.stringify(settings));
     } catch (e) {
       console.log('[JS] Error loading settings, using defaults');
@@ -176,6 +182,8 @@ Pebble.addEventListener('ready', function(e) {
   var PRECIP_UNIT_KEY = (MessageKeys && typeof MessageKeys.PRECIP_UNIT !== 'undefined') ? MessageKeys.PRECIP_UNIT : 11;
   var HOURLY_VIBRATION_KEY = (MessageKeys && typeof MessageKeys.HOURLY_VIBRATION !== 'undefined') ? MessageKeys.HOURLY_VIBRATION : 12;
   var UPDATE_COUNTDOWN_KEY = (MessageKeys && typeof MessageKeys.UPDATE_COUNTDOWN !== 'undefined') ? MessageKeys.UPDATE_COUNTDOWN : 13;
+  var SHOW_STEPS_KEY = (MessageKeys && typeof MessageKeys.SHOW_STEPS !== 'undefined') ? MessageKeys.SHOW_STEPS : 14;
+  var STEP_UNIT_KEY = (MessageKeys && typeof MessageKeys.STEP_UNIT !== 'undefined') ? MessageKeys.STEP_UNIT : 15;
 
   // --- 2. Weather Sending Helper ---
   function sendWeatherToWatch(pressureValue, tempValue, condText, humidityValue, windValue, precipValue, pressureTrend, locationName) {
@@ -235,8 +243,10 @@ Pebble.addEventListener('ready', function(e) {
     // Send settings
     dict[HOURLY_VIBRATION_KEY] = settings.hourly_vibration ? 1 : 0;
     dict[UPDATE_COUNTDOWN_KEY] = settings.update_countdown ? 1 : 0;
+    dict[SHOW_STEPS_KEY] = settings.show_steps ? 1 : 0;
+    dict[STEP_UNIT_KEY] = settings.step_unit === 'miles' ? 1 : 0; // 1 = miles, 0 = kilometers
     
-    console.log('[JS] Final message with units: temp=' + dict[TEMP_UNIT_KEY] + ', wind=' + dict[WIND_UNIT_KEY] + ', precip=' + dict[PRECIP_UNIT_KEY] + ', vibration=' + dict[HOURLY_VIBRATION_KEY] + ', countdown=' + dict[UPDATE_COUNTDOWN_KEY]);
+    console.log('[JS] Final message with units: temp=' + dict[TEMP_UNIT_KEY] + ', wind=' + dict[WIND_UNIT_KEY] + ', precip=' + dict[PRECIP_UNIT_KEY] + ', vibration=' + dict[HOURLY_VIBRATION_KEY] + ', countdown=' + dict[UPDATE_COUNTDOWN_KEY] + ', steps=' + dict[SHOW_STEPS_KEY] + ', step_unit=' + dict[STEP_UNIT_KEY]);
     console.log('[JS] Calling Pebble.sendAppMessage...');
     
     Pebble.sendAppMessage(dict,
@@ -630,6 +640,22 @@ button{padding:12px 25px;font-size:16px;border:none;border-radius:6px;cursor:poi
 </div>
 <div class="description">Display a progress line showing time until next weather update (15 minutes)</div>
 </div>
+<div class="setting-group">
+<div class="setting-label">Step Tracking</div>
+<div class="radio-option">
+<input type="checkbox" id="show_steps" name="show_steps" ${settings.show_steps ? 'checked' : ''}>
+<label for="show_steps">Show step count and distance</label>
+</div>
+<div class="description">Replace wind/precipitation data with daily step count and distance (requires Health permission)</div>
+</div>
+<div class="setting-group">
+<div class="setting-label">Distance Units</div>
+<div class="radio-group">
+<div class="radio-option"><input type="radio" id="step_miles" name="step_unit" value="miles" ${settings.step_unit === 'miles' ? 'checked' : ''}><label for="step_miles">Miles (mi)</label></div>
+<div class="radio-option"><input type="radio" id="step_km" name="step_unit" value="kilometers" ${settings.step_unit === 'kilometers' ? 'checked' : ''}><label for="step_km">Kilometers (km)</label></div>
+</div>
+<div class="description">Choose distance measurement unit for step tracking</div>
+</div>
 <div class="button-group">
 <div class="button-group">
 <button type="submit" class="save-btn">Save Settings</button>
@@ -645,7 +671,9 @@ document.getElementById('settingsForm').addEventListener('submit', function(e) {
     wind_unit: document.querySelector('input[name="wind_unit"]:checked').value,
     precipitation_unit: document.querySelector('input[name="precipitation_unit"]:checked').value,
     hourly_vibration: document.getElementById('hourly_vibration').checked,
-    update_countdown: document.getElementById('update_countdown').checked
+    update_countdown: document.getElementById('update_countdown').checked,
+    show_steps: document.getElementById('show_steps').checked,
+    step_unit: document.querySelector('input[name="step_unit"]:checked').value
   };
   document.location = 'pebblejs://close#' + encodeURIComponent(JSON.stringify(settings));
 });
@@ -683,6 +711,18 @@ Pebble.addEventListener('webviewclosed', function(e) {
         settings.update_countdown = newSettings.update_countdown;
       } else {
         console.log('[JS] update_countdown not found in new settings');
+      }
+      if (typeof newSettings.show_steps !== 'undefined') {
+        console.log('[JS] Updating show_steps from ' + settings.show_steps + ' to ' + newSettings.show_steps);
+        settings.show_steps = newSettings.show_steps;
+      } else {
+        console.log('[JS] show_steps not found in new settings');
+      }
+      if (newSettings.step_unit) {
+        console.log('[JS] Updating step_unit from ' + settings.step_unit + ' to ' + newSettings.step_unit);
+        settings.step_unit = newSettings.step_unit;
+      } else {
+        console.log('[JS] step_unit not found in new settings');
       }
       
       console.log('[JS] Updated settings: ' + JSON.stringify(settings));

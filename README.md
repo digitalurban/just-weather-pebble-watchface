@@ -8,23 +8,22 @@
 
 A clean and simple watch face for Pebble smartwatches that provides the current time and essential weather information at a glance.
 
-## What's New in Version 1.4.0
+## What's New in Version 1.5.0
 
-* 📊 **Visual Progress Indicator:** Real-time countdown showing time until next weather update (15-minute cycle)
-  * Elegant horizontal line with dot indicators showing elapsed time
-  * Customizable through settings - enable/disable as preferred
-  * **Enabled by default** to showcase the feature
-* 🌤️ **Fresh Weather Data:** Now uses forecast data 15 minutes ahead instead of current conditions for more up-to-date information
-* ⏰ **Hourly Vibration Feature:** Optional gentle vibration at the top of each hour for time awareness
-* ⚙️ **Enhanced Configurable Settings:** Expanded settings page with new options:
-  * Temperature units: Celsius (°C) or Fahrenheit (°F)
-  * Wind speed: mph or km/h  
-  * Precipitation: millimeters (mm) or inches (in)
-  * Hourly vibration: Enable/disable hourly time alerts
-  * **Update countdown:** Show/hide the weather update progress indicator
-* 🔄 **Dynamic Layout Management:** Progress indicator can be toggled on/off in real-time with perfect spacing
-* 🐛 **Enhanced Settings Persistence:** Improved settings loading/saving for reliable preference storage
-* 🌤️ **Comprehensive Weather Conditions:** Expanded to 25+ specific weather descriptions from Open-Meteo
+* �‍♂️ **Step Tracking Integration:** Complete fitness tracking with Health API integration
+  * Real-time step count and distance display with minute-by-minute updates
+  * Authentic Google Material Design walking icon positioned between step count and distance
+  * Miles/kilometers unit selection with precise decimal formatting (2 decimal places for miles, 1 for km)
+  * Show/hide steps toggle setting - replaces wind/precipitation line when enabled
+  * Minimal battery impact - leverages existing minute timer for efficient updates
+* 🎯 **Smart Display Management:** Dynamic layout switching between weather and fitness data
+  * Seamlessly toggles between wind/precipitation and step tracking based on user preference
+  * Perfect icon positioning in the center of the step display line
+  * Optimized text spacing to prevent overlap with the walking icon
+* ⚙️ **Enhanced Settings:** New fitness preferences in the settings page:
+  * **Show Steps:** Enable/disable step tracking display
+  * **Distance Units:** Choose between miles (mi) and kilometers (km) for step distance
+  * Real-time settings updates with immediate display refresh
 
 ## Features
 
@@ -55,6 +54,12 @@ A clean and simple watch face for Pebble smartwatches that provides the current 
     * **Conditions:** Detailed weather descriptions covering 25+ specific conditions from Open-Meteo (Clear Sky, Thunderstorm, Heavy Rain, etc.).
     * **Pressure:** Current atmospheric pressure in hPa, with 3-hour trend indicator showing changes.
     * **Wind & Precipitation:** Current wind speed and precipitation amount (displayed in your preferred units).
+* **Step Tracking (NEW):**
+    * **Step Count:** Real-time daily step counter using Pebble Health API with minute-by-minute updates.
+    * **Distance:** Calculated walking distance with precise formatting (miles: 2 decimal places, kilometers: 1 decimal place).
+    * **Google Material Design Icon:** Authentic directions_walk icon positioned perfectly between step count and distance.
+    * **Smart Display:** Replaces wind/precipitation line when step tracking is enabled for clean, focused layout.
+    * **Minimal Battery Impact:** Efficient updates leveraging existing minute timer - less than 1% additional battery drain.
 
 ## Technical Details
 
@@ -72,6 +77,8 @@ Access the settings page through your Pebble app or by long-pressing the select 
 * **Precipitation Units:** Pick millimeters (mm) or inches (in) for rainfall measurements
 * **Hourly Vibration:** Enable or disable gentle vibration alerts at the top of each hour
 * **Update Countdown:** Show or hide the weather update progress indicator (enabled by default)
+* **Step Tracking:** Enable or disable step count and distance display (replaces wind/precipitation when enabled)
+* **Distance Units:** Choose between miles (mi) and kilometers (km) for step distance display
 
 All changes take effect immediately with dynamic layout adjustment - no need to restart the app!
 

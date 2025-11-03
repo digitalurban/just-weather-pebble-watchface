@@ -1,7 +1,7 @@
 {
   "name": "just-weather",
   "author": "Digital Urban",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "keywords": ["pebble-app"],
   "private": true,
   "dependencies": {},
@@ -19,11 +19,18 @@
       "watchface": true
     },
     "resources": {
-      "media": []
+      "media": [
+        {
+          "type": "bitmap",
+          "name": "SHOE_ICON",
+          "file": "shoe_icon.png"
+        }
+      ]
     },
     "capabilities": [
       "location",
-      "configurable"
+      "configurable",
+      "health"
     ],
     "messageKeys": {
       "PRESSURE": 0,
@@ -39,7 +46,11 @@
       "WIND_UNIT": 10,
       "PRECIP_UNIT": 11,
       "HOURLY_VIBRATION": 12,
-      "UPDATE_COUNTDOWN": 13
+      "UPDATE_COUNTDOWN": 13,
+      "SHOW_STEPS": 14,
+      "STEP_UNIT": 15,
+      "STEP_COUNT": 16,
+      "STEP_DISTANCE": 17
     }
   }
 }

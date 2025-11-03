@@ -17,6 +17,10 @@
 #define MESSAGE_KEY_PRECIP_UNIT 11
 #define MESSAGE_KEY_HOURLY_VIBRATION 12
 #define MESSAGE_KEY_UPDATE_COUNTDOWN 13
+#define MESSAGE_KEY_SHOW_STEPS 14
+#define MESSAGE_KEY_STEP_UNIT 15
+#define MESSAGE_KEY_STEP_COUNT 16
+#define MESSAGE_KEY_STEP_DISTANCE 17
 
 static Window *s_main_window;
 static TextLayer *s_time_layer;
@@ -47,9 +51,25 @@ static int s_last_hour = -1;
 // Update progress tracking
 static time_t s_last_weather_update = 0;
 
+// Step tracking settings and data
+static bool s_show_steps_enabled = false;
+static bool s_step_unit_miles = true; // true = miles, false = kilometers
+static char s_step_display_buffer[64];
+static int s_current_step_count = 0;
+static int s_current_step_distance = 0;
+
+// Step icon bitmap resources
+static GBitmap *s_shoe_icon_bitmap = NULL;
+static BitmapLayer *s_shoe_icon_layer = NULL;
+
 // --- Function Declarations --- //
 static void progress_layer_draw(Layer *layer, GContext *ctx);
 static int calculate_progress_layer_y_position(void);
+static void update_step_data(void);
+static void update_step_display(void);
+static void load_step_icon(void);
+static void unload_step_icon(void);
+static void destroy_step_icon_layer(void);
 
 // --- AppMessage Handlers --- //
 
@@ -221,6 +241,33 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     text_layer_set_text(s_wind_precip_layer, precip_display);
   }
   
+  // Handle step tracking settings
+  Tuple *show_steps_tuple = dict_find(iterator, MESSAGE_KEY_SHOW_STEPS);
+  if (show_steps_tuple) {
+    if (show_steps_tuple->type == TUPLE_INT) {
+      s_show_steps_enabled = (show_steps_tuple->value->int32 != 0);
+      APP_LOG(APP_LOG_LEVEL_INFO, "Show steps setting: %s", 
+              s_show_steps_enabled ? "enabled" : "disabled");
+      
+      // When steps are enabled/disabled, update the display
+      update_step_display();
+    }
+  }
+  
+  Tuple *step_unit_tuple = dict_find(iterator, MESSAGE_KEY_STEP_UNIT);
+  if (step_unit_tuple) {
+    if (step_unit_tuple->type == TUPLE_INT) {
+      s_step_unit_miles = (step_unit_tuple->value->int32 != 0); // 1 = miles, 0 = kilometers
+      APP_LOG(APP_LOG_LEVEL_INFO, "Step unit setting: %s", 
+              s_step_unit_miles ? "miles" : "kilometers");
+      
+      // Update display if steps are enabled
+      if (s_show_steps_enabled) {
+        update_step_display();
+      }
+    }
+  }
+  
   // Handle hourly vibration setting
   Tuple *vibration_tuple = dict_find(iterator, MESSAGE_KEY_HOURLY_VIBRATION);
   if (vibration_tuple) {
@@ -376,6 +423,110 @@ static void update_progress_bar() {
   }
 }
 
+// --- Step Tracking Functions --- //
+
+static void update_step_data(void) {
+  #if defined(PBL_HEALTH)
+  // Get current step count for today
+  HealthMetric metric = HealthMetricStepCount;
+  HealthValue step_count = health_service_sum_today(metric);
+  
+  if (step_count >= 0) {
+    s_current_step_count = (int)step_count;
+    
+    // Calculate distance based on step count
+    // Average step length assumptions: ~2.5 feet per step = ~0.76 meters
+    // So: steps * 0.76 meters = total meters
+    // Convert to miles: meters * 0.000621371 = miles
+    // Convert to kilometers: meters / 1000 = km
+    
+    int distance_meters = (int)(s_current_step_count * 0.76f);
+    
+    if (s_step_unit_miles) {
+      // Convert to miles and store as hundredths
+      s_current_step_distance = (int)(distance_meters * 0.000621371f * 100);
+    } else {
+      // Convert to kilometers and store as tenths
+      s_current_step_distance = (int)(distance_meters / 100.0f); // Convert to km then multiply by 10 for tenths
+    }
+    
+    APP_LOG(APP_LOG_LEVEL_INFO, "Steps: %d, Distance: %d (%s)", 
+            s_current_step_count, s_current_step_distance, 
+            s_step_unit_miles ? "miles*100" : "km*10");
+  } else {
+    s_current_step_count = 0;
+    s_current_step_distance = 0;
+    APP_LOG(APP_LOG_LEVEL_WARNING, "Health data unavailable");
+  }
+  #else
+  // Health API not available on this platform
+  s_current_step_count = 0;
+  s_current_step_distance = 0;
+  APP_LOG(APP_LOG_LEVEL_WARNING, "Health API not available on this platform");
+  #endif
+}
+
+static void update_step_display(void) {
+  if (s_show_steps_enabled) {
+    // Show step icon
+    if (s_shoe_icon_layer) {
+      layer_set_hidden(bitmap_layer_get_layer(s_shoe_icon_layer), false);
+    }
+    
+    // Update step data from Health API
+    update_step_data();
+    
+    // Format step display - icon positioned between count and distance
+    if (s_step_unit_miles) {
+      // Display miles with 2 decimal places - wider spacing for icon
+      int whole_miles = s_current_step_distance / 100;
+      int frac_miles = s_current_step_distance % 100;
+      snprintf(s_step_display_buffer, sizeof(s_step_display_buffer), 
+               "%d      %d.%02d mi", s_current_step_count, whole_miles, frac_miles);
+    } else {
+      // Display kilometers with 1 decimal place - wider spacing for icon
+      int whole_km = s_current_step_distance / 10;
+      int frac_km = s_current_step_distance % 10;
+      snprintf(s_step_display_buffer, sizeof(s_step_display_buffer), 
+               "%d      %d.%d km", s_current_step_count, whole_km, frac_km);
+    }
+    
+    // Replace the wind/precip layer with step data
+    text_layer_set_text(s_wind_precip_layer, s_step_display_buffer);
+    APP_LOG(APP_LOG_LEVEL_INFO, "Step display updated: %s", s_step_display_buffer);
+  } else {
+    // Steps disabled - hide icon and show weather data
+    if (s_shoe_icon_layer) {
+      layer_set_hidden(bitmap_layer_get_layer(s_shoe_icon_layer), true);
+    }
+    APP_LOG(APP_LOG_LEVEL_INFO, "Step display disabled - showing weather data");
+  }
+}
+
+// --- Step Icon Functions --- //
+
+static void load_step_icon(void) {
+  if (s_shoe_icon_bitmap == NULL) {
+    s_shoe_icon_bitmap = gbitmap_create_with_resource(RESOURCE_ID_SHOE_ICON);
+  }
+}
+
+static void unload_step_icon(void) {
+  if (s_shoe_icon_bitmap) {
+    gbitmap_destroy(s_shoe_icon_bitmap);
+    s_shoe_icon_bitmap = NULL;
+  }
+}
+
+
+
+static void destroy_step_icon_layer(void) {
+  if (s_shoe_icon_layer) {
+    bitmap_layer_destroy(s_shoe_icon_layer);
+    s_shoe_icon_layer = NULL;
+  }
+}
+
 // --- Clock Update Handler --- //
 
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
@@ -394,6 +545,11 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   
   // Update the progress bar
   update_progress_bar();
+  
+  // Update step display every minute if enabled (minimal battery impact)
+  if (s_show_steps_enabled) {
+    update_step_display();
+  }
   
   // Check for hourly vibration
   if (s_hourly_vibration_enabled) {
@@ -500,6 +656,24 @@ static void main_window_load(Window *window) {
   text_layer_set_text_alignment(s_wind_precip_layer, GTextAlignmentCenter);
   text_layer_set_text(s_wind_precip_layer, "");
   layer_add_child(window_layer, text_layer_get_layer(s_wind_precip_layer));
+  
+  // Load step icon (will be shown/hidden based on settings)
+  load_step_icon();
+  
+  // Create step icon layer (positioned between step count and distance)
+  if (s_shoe_icon_bitmap) {
+    // Position icon to the left of center to fit between step count and distance
+    GRect bounds = layer_get_bounds(window_layer);
+    int icon_x = (bounds.size.w / 2) - 16;  // Offset left from center to avoid overlap
+    GRect icon_frame = GRect(icon_x, current_y + 6, 16, 16);
+    
+    s_shoe_icon_layer = bitmap_layer_create(icon_frame);
+    bitmap_layer_set_bitmap(s_shoe_icon_layer, s_shoe_icon_bitmap);
+    layer_add_child(window_layer, bitmap_layer_get_layer(s_shoe_icon_layer));
+    
+    // Hide icon initially (will be shown when steps are enabled)
+    layer_set_hidden(bitmap_layer_get_layer(s_shoe_icon_layer), true);
+  }
 }
 
 static void main_window_unload(Window *window) {
@@ -512,6 +686,10 @@ static void main_window_unload(Window *window) {
   text_layer_destroy(s_temp_cond_layer);
   text_layer_destroy(s_pressure_layer);
   text_layer_destroy(s_wind_precip_layer);
+  
+  // Clean up step icon resources
+  destroy_step_icon_layer();
+  unload_step_icon();
 }
 
 // --- Main App Init/Deinit --- //
@@ -541,6 +719,11 @@ static void init() {
   // Use smaller, reasonable buffer sizes to avoid large heap usage.
   // Our payload is small (several integers and short strings), so 2KB inbox / 512B outbox is sufficient.
   app_message_open(2048, 512);
+  
+  // Initialize step tracking if enabled
+  if (s_show_steps_enabled) {
+    update_step_display();
+  }
 }
 
 static void deinit() {
