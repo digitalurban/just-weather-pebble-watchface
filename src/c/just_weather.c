@@ -665,7 +665,7 @@ static void main_window_load(Window *window) {
     // Position icon to the left of center to fit between step count and distance
     GRect bounds = layer_get_bounds(window_layer);
     int icon_x = (bounds.size.w / 2) - 16;  // Offset left from center to avoid overlap
-    GRect icon_frame = GRect(icon_x, current_y + 6, 16, 16);
+    GRect icon_frame = GRect(icon_x, current_y + 9, 16, 16);  // Align with text baseline
     
     s_shoe_icon_layer = bitmap_layer_create(icon_frame);
     bitmap_layer_set_bitmap(s_shoe_icon_layer, s_shoe_icon_bitmap);
