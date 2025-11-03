@@ -8,7 +8,7 @@
 
 A clean and simple watch face for Pebble smartwatches that provides the current time and essential weather information at a glance.
 
-## What's New in Version 1.5.0
+## What's New in Version 1.6.0
 
 * �‍♂️ **Step Tracking Integration:** Complete fitness tracking with Health API integration
   * Real-time step count and distance display with minute-by-minute updates
