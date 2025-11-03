@@ -443,8 +443,8 @@ static void update_step_data(void) {
     int distance_meters = (int)(s_current_step_count * 0.76f);
     
     if (s_step_unit_miles) {
-      // Convert to miles and store as hundredths
-      s_current_step_distance = (int)(distance_meters * 0.000621371f * 100);
+      // Convert to miles and store as tenths (for 1 decimal place display)
+      s_current_step_distance = (int)(distance_meters * 0.000621371f * 10);
     } else {
       // Convert to kilometers and store as tenths
       s_current_step_distance = (int)(distance_meters / 100.0f); // Convert to km then multiply by 10 for tenths
