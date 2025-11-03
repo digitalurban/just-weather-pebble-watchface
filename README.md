@@ -18,7 +18,7 @@ A clean and simple watch face for Pebble smartwatches that provides the current 
   * Minimal battery impact - leverages existing minute timer for efficient updates
 * 🎯 **Smart Display Management:** Dynamic layout switching between weather and fitness data
   * Seamlessly toggles between wind/precipitation and step tracking based on user preference
-  * Perfect icon positioning in the center of the step display line
+  * Clean icon positioning in the center of the step display line
   * Optimized text spacing to prevent overlap with the walking icon
 * ⚙️ **Enhanced Settings:** New fitness preferences in the settings page:
   * **Show Steps:** Enable/disable step tracking display
@@ -31,7 +31,7 @@ A clean and simple watch face for Pebble smartwatches that provides the current 
 * **Weather Update Progress:** Visual countdown indicator showing time until next weather refresh (15-minute cycle):
     * Horizontal progress line with dot indicators  
     * Shows elapsed time since last update with filled/empty dots
-    * Perfect spacing that integrates seamlessly with the watch face design
+    * Clean spacing that integrates seamlessly with the watch face design
     * **Optional:** Can be disabled for a cleaner look through settings
 * **Hourly Vibration:** Optional gentle vibration alert at the top of each hour for time awareness during meetings or focused work.
 * **Configurable Units:** Comprehensive settings for personalizing your weather display:
@@ -57,7 +57,7 @@ A clean and simple watch face for Pebble smartwatches that provides the current 
 * **Step Tracking (NEW):**
     * **Step Count:** Real-time daily step counter using Pebble Health API with minute-by-minute updates.
     * **Distance:** Calculated walking distance with precise formatting (miles: 2 decimal places, kilometers: 1 decimal place).
-    * **Google Material Design Icon:** Authentic directions_walk icon positioned perfectly between step count and distance.
+    * **Google Material Design Icon:** Authentic directions_walk icon positioned cleanly between step count and distance.
     * **Smart Display:** Replaces wind/precipitation line when step tracking is enabled for clean, focused layout.
     * **Minimal Battery Impact:** Efficient updates leveraging existing minute timer - less than 1% additional battery drain.
 
