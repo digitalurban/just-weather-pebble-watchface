@@ -8,7 +8,23 @@
 
 A clean and simple watch face for Pebble smartwatches that provides the current time and essential weather information at a glance.
 
-## What's New in Version 1.6.0
+## What's New in Version 1.7.0
+
+* 🌧️ **Enhanced Rainfall Display:** Improved precipitation accuracy with daily accumulated rainfall
+  * Shows total rainfall accumulated throughout the current day instead of instantaneous rates
+  * More meaningful precipitation data for better weather awareness
+  * Maintains millimeter/inch unit preferences with accurate daily totals
+* 🎯 **Optimized Weather Forecasting:** Enhanced forecast accuracy using proper 15-minute data
+  * Uses actual 15-minute forecast data instead of hourly approximations for current conditions
+  * Improved weather condition detection with more responsive updates
+  * Better alignment between displayed conditions and real-time weather
+* ⚡ **Smart API Integration:** Multi-endpoint weather data optimization
+  * 15-minute forecast for current conditions (most accurate short-term data)
+  * Hourly forecast for atmospheric pressure (appropriate granularity)
+  * Daily forecast for accumulated rainfall (meaningful precipitation totals)
+  * Reduced API calls while maintaining data accuracy
+
+### Previous Updates (Version 1.6.0)
 
 * �‍♂️ **Step Tracking Integration:** Complete fitness tracking with Health API integration
   * Real-time step count and distance display with minute-by-minute updates
@@ -53,7 +69,7 @@ A clean and simple watch face for Pebble smartwatches that provides the current 
     * **Temperature:** Current temperature with weather conditions (displayed in your preferred unit).
     * **Conditions:** Detailed weather descriptions covering 25+ specific conditions from Open-Meteo (Clear Sky, Thunderstorm, Heavy Rain, etc.).
     * **Pressure:** Current atmospheric pressure in hPa, with 3-hour trend indicator showing changes.
-    * **Wind & Precipitation:** Current wind speed and precipitation amount (displayed in your preferred units).
+    * **Wind & Precipitation:** Current wind speed and daily accumulated rainfall (displayed in your preferred units).
 * **Step Tracking (NEW):**
     * **Step Count:** Real-time daily step counter using Pebble Health API with minute-by-minute updates.
     * **Distance:** Calculated walking distance with consistent formatting (1 decimal place for both miles and kilometers).
@@ -74,7 +90,7 @@ Access the settings page through your Pebble app or by long-pressing the select 
 
 * **Temperature Units:** Choose between Celsius (°C) and Fahrenheit (°F)
 * **Wind Speed Units:** Select mph or km/h for wind speed display
-* **Precipitation Units:** Pick millimeters (mm) or inches (in) for rainfall measurements
+* **Precipitation Units:** Pick millimeters (mm) or inches (in) for daily rainfall total display
 * **Hourly Vibration:** Enable or disable gentle vibration alerts at the top of each hour
 * **Update Countdown:** Show or hide the weather update progress indicator (enabled by default)
 * **Step Tracking:** Enable or disable step count and distance display (replaces wind/precipitation when enabled)

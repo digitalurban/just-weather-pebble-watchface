@@ -408,12 +408,11 @@ Pebble.addEventListener('ready', function(e) {
 
   // --- 4. Fetch Function (No Promises) ---
   function fetchPressureFromOpenMeteo(lat, lon, locationName) {
-    // Build API URL to get forecast data instead of current (more up-to-date)
-    // We'll use the forecast for ~15 minutes from now for more current conditions
-    // This approach provides fresher data since "current" weather can be outdated
+    // Build API URL to get 15-minute forecast for current conditions, hourly for pressure, daily for accumulated rainfall
     var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + encodeURIComponent(lat) + '&longitude=' + encodeURIComponent(lon) + 
-              '&hourly=surface_pressure,temperature_2m,weather_code,relative_humidity_2m,wind_speed_10m,precipitation' + 
-              '&forecast_hours=24' + // Get 24 hours of forecast data
+              '&minutely_15=weather_code,temperature_2m,relative_humidity_2m,wind_speed_10m&forecast_minutely_15=1' + // 15-min forecast
+              '&hourly=surface_pressure&forecast_hours=24' + // Hourly for pressure
+              '&daily=precipitation_sum&forecast_days=1' + // Daily accumulated rainfall
               '&timeformat=unixtime&timezone=auto';
     
     console.log('[JS] Fetching Open-Meteo: ' + url);
@@ -457,23 +456,29 @@ Pebble.addEventListener('ready', function(e) {
               }
             }
             
-            console.log('[JS] Using forecast data index ' + bestIdx + ' (target: +15min from now)');
+            console.log('[JS] Using 15-minute forecast for current conditions, hourly for pressure, daily for rainfall');
             
-            // Extract weather data from the selected forecast point
-            if (data.hourly.temperature_2m && bestIdx < data.hourly.temperature_2m.length) {
-              currentTemp = data.hourly.temperature_2m[bestIdx];
+            // Extract all weather data from 15-minute forecast (most accurate)
+            if (data.minutely_15) {
+              var m15 = data.minutely_15;
+              if (m15.weather_code && m15.weather_code.length > 0) {
+                currentCondition = weatherCodeToString(m15.weather_code[0]);
+              }
+              if (m15.temperature_2m && m15.temperature_2m.length > 0) {
+                currentTemp = m15.temperature_2m[0];
+              }
+              if (m15.relative_humidity_2m && m15.relative_humidity_2m.length > 0) {
+                humidity = m15.relative_humidity_2m[0];
+              }
+              if (m15.wind_speed_10m && m15.wind_speed_10m.length > 0) {
+                windSpeed = m15.wind_speed_10m[0];
+              }
             }
-            if (data.hourly.weather_code && bestIdx < data.hourly.weather_code.length) {
-              currentCondition = weatherCodeToString(data.hourly.weather_code[bestIdx]);
-            }
-            if (data.hourly.relative_humidity_2m && bestIdx < data.hourly.relative_humidity_2m.length) {
-              humidity = data.hourly.relative_humidity_2m[bestIdx];
-            }
-            if (data.hourly.wind_speed_10m && bestIdx < data.hourly.wind_speed_10m.length) {
-              windSpeed = data.hourly.wind_speed_10m[bestIdx];
-            }
-            if (data.hourly.precipitation && bestIdx < data.hourly.precipitation.length) {
-              precipitation = data.hourly.precipitation[bestIdx];
+            
+            // Extract daily accumulated rainfall
+            if (data.daily && data.daily.precipitation_sum && data.daily.precipitation_sum.length > 0) {
+              precipitation = data.daily.precipitation_sum[0];
+              console.log('[JS] Daily accumulated rainfall: ' + precipitation + ' mm');
             }
             
             // Handle pressure data from the same forecast point
