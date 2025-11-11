@@ -408,10 +408,10 @@ Pebble.addEventListener('ready', function(e) {
 
   // --- 4. Fetch Function (No Promises) ---
   function fetchPressureFromOpenMeteo(lat, lon, locationName) {
-    // Build API URL to get 15-minute forecast for current conditions, hourly for pressure, daily for accumulated rainfall
+    // Build API URL to get current data for temperature/pressure/wind, 15-minute forecast for conditions, daily for rainfall
     var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + encodeURIComponent(lat) + '&longitude=' + encodeURIComponent(lon) + 
-              '&minutely_15=weather_code,temperature_2m,relative_humidity_2m,wind_speed_10m&forecast_minutely_15=1' + // 15-min forecast
-              '&hourly=surface_pressure&forecast_hours=24' + // Hourly for pressure
+              '&current=temperature_2m,relative_humidity_2m,wind_speed_10m,surface_pressure' + // Current conditions
+              '&minutely_15=weather_code&forecast_minutely_15=1' + // 15-min forecast for conditions only
               '&daily=precipitation_sum&forecast_days=1' + // Daily accumulated rainfall
               '&timeformat=unixtime&timezone=auto';
     
@@ -439,79 +439,40 @@ Pebble.addEventListener('ready', function(e) {
           var pressure = undefined;
           var trendStr = undefined;
 
-          // Use forecast data for more current conditions (15 minutes ahead)
-          if (data && data.hourly && data.hourly.time && data.hourly.time.length > 0) {
-            var times = data.hourly.time;
-            var now = Date.now();
-            var target = now + (15 * 60 * 1000); // 15 minutes from now
-            
-            // Find forecast entry closest to 15 minutes from now
-            var bestIdx = 0;
-            var bestDiff = Math.abs((times[0] * 1000) - target);
-            for (var i = 1; i < times.length; i++) {
-              var diff = Math.abs((times[i] * 1000) - target);
-              if (diff < bestDiff) {
-                bestDiff = diff;
-                bestIdx = i;
-              }
+          console.log('[JS] Using current data for temperature/pressure/wind, 15-minute forecast for conditions, daily for rainfall');
+          
+          // Extract current weather data (most accurate for present conditions)
+          if (data.current) {
+            var current = data.current;
+            if (current.temperature_2m !== undefined) {
+              currentTemp = current.temperature_2m;
             }
-            
-            console.log('[JS] Using 15-minute forecast for current conditions, hourly for pressure, daily for rainfall');
-            
-            // Extract all weather data from 15-minute forecast (most accurate)
-            if (data.minutely_15) {
-              var m15 = data.minutely_15;
-              if (m15.weather_code && m15.weather_code.length > 0) {
-                currentCondition = weatherCodeToString(m15.weather_code[0]);
-              }
-              if (m15.temperature_2m && m15.temperature_2m.length > 0) {
-                currentTemp = m15.temperature_2m[0];
-              }
-              if (m15.relative_humidity_2m && m15.relative_humidity_2m.length > 0) {
-                humidity = m15.relative_humidity_2m[0];
-              }
-              if (m15.wind_speed_10m && m15.wind_speed_10m.length > 0) {
-                windSpeed = m15.wind_speed_10m[0];
-              }
+            if (current.relative_humidity_2m !== undefined) {
+              humidity = current.relative_humidity_2m;
             }
+            if (current.wind_speed_10m !== undefined) {
+              windSpeed = current.wind_speed_10m;
+            }
+            if (current.surface_pressure !== undefined) {
+              pressure = current.surface_pressure;
+              console.log('[JS] Current pressure: ' + pressure + ' hPa');
+            }
+          }
+          
+          // Extract weather conditions from 15-minute forecast (next 15 minutes)
+          if (data.minutely_15 && data.minutely_15.weather_code && data.minutely_15.weather_code.length > 0) {
+            currentCondition = weatherCodeToString(data.minutely_15.weather_code[0]);
+            console.log('[JS] 15-minute forecast conditions: ' + currentCondition);
+          }
             
             // Extract daily accumulated rainfall
             if (data.daily && data.daily.precipitation_sum && data.daily.precipitation_sum.length > 0) {
               precipitation = data.daily.precipitation_sum[0];
               console.log('[JS] Daily accumulated rainfall: ' + precipitation + ' mm');
             }
-            
-            // Handle pressure data from the same forecast point
-            if (data.hourly.surface_pressure && bestIdx < data.hourly.surface_pressure.length) {
-              var pressures = data.hourly.surface_pressure;
-              pressure = pressures[bestIdx];
-              console.log('[JS] Open-Meteo pressure (forecast index=' + bestIdx + '): ' + pressure + ' hPa');
-
-              // Calculate 3-hour trend using forecast data
-              var threeHoursAgo = (now / 1000) - (3 * 3600);
-              var pastIdx = -1;
-              var pastDiff = Infinity;
-              
-              // Find the forecast point closest to 3 hours ago
-              for (var j = 0; j < times.length; j++) {
-                var d = Math.abs(times[j] - threeHoursAgo);
-                if (d < pastDiff) {
-                  pastDiff = d;
-                  pastIdx = j;
-                }
-              }
-
-              if (pastIdx !== -1 && pastIdx < pressures.length) {
-                var pastPressure = pressures[pastIdx];
-                var trend = pressure - pastPressure;
-                trendStr = (trend >= 0 ? '+' : '') + trend.toFixed(1);
-                console.log('[JS] Pressure trend (3hr forecast): ' + trend.toFixed(1) + ' hPa');
-              }
-            }
-          }
-
+          
           sendWeatherToWatch(pressure, currentTemp, currentCondition, humidity, windSpeed, precipitation, trendStr, locationName);
-
+          
         } catch (ex) {
           console.log('[JS] Error parsing Open-Meteo response: ' + ex);
           sendWeatherToWatch(1013, 20, 'Parse Error', undefined, undefined, undefined, undefined, locationName); // Send specific error

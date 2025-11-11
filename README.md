@@ -8,7 +8,19 @@
 
 A clean and simple watch face for Pebble smartwatches that provides the current time and essential weather information at a glance.
 
-## What's New in Version 1.7.0
+## What's New in Version 1.8.0
+
+* 🎯 **Optimized Data Sources:** Perfect balance of accuracy and responsiveness
+  * **Current data** for temperature, pressure, wind speed, and humidity (most accurate present conditions)
+  * **15-minute forecast** for weather conditions only (upcoming weather changes)
+  * **Daily accumulated rainfall** for meaningful precipitation totals
+  * Eliminates forecast lag for measurements while maintaining predictive conditions
+* ⚡ **Enhanced API Efficiency:** Streamlined data retrieval with optimal endpoints
+  * Reduced API complexity while maintaining comprehensive weather information
+  * Faster response times with current weather measurements
+  * More accurate short-term condition forecasting
+
+### Previous Updates (Version 1.7.0)
 
 * 🌧️ **Enhanced Rainfall Display:** Improved precipitation accuracy with daily accumulated rainfall
   * Shows total rainfall accumulated throughout the current day instead of instantaneous rates
@@ -60,9 +72,10 @@ A clean and simple watch face for Pebble smartwatches that provides the current 
     * Smart location detection prioritizing local names (village → hamlet → suburb → town → city → county)
     * Robust error handling with London fallback coordinates
     * Proper timeout handling (10 seconds) for reliable operation
-* **Fresh Weather Data:** Enhanced data freshness using forecast-based updates:
-    * Uses hourly forecast data 15 minutes ahead instead of current conditions
-    * Provides more up-to-date weather information throughout the day
+* **Fresh Weather Data:** Optimized data sources for maximum accuracy and responsiveness:
+    * Current weather data for temperature, pressure, wind speed, and humidity (real-time accuracy)
+    * 15-minute forecast for weather conditions to show upcoming changes
+    * Daily accumulated rainfall for meaningful precipitation totals
     * Visual progress indicator shows time remaining until next update
 * **Current Weather:**
     * **Location:** Shows the most relevant local place name for your current position.
