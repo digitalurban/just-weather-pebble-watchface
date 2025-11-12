@@ -8,7 +8,15 @@
 
 A clean and simple watch face for Pebble smartwatches that provides the current time and essential weather information at a glance.
 
-## What's New in Version 1.8.0
+## What's New in Version 1.9.0
+
+* 🎨 **Display Refinements:** Enhanced visual layout and text display
+  * Fixed step count spacing - distance numbers no longer overlap with shoe icon
+  * Removed unnecessary ellipsis from weather conditions (e.g., "Slight Rain" displays without dots)
+  * Improved text positioning for better readability at zero steps/distance
+  * Cleaner presentation across all display elements
+
+### Previous Updates (Version 1.8.0)
 
 * 🎯 **Optimized Data Sources:** Perfect balance of accuracy and responsiveness
   * **Current data** for temperature, pressure, wind speed, and humidity (most accurate present conditions)
