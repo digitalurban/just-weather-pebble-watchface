@@ -38,7 +38,7 @@ static TextLayer *s_wind_precip_layer;
 
 // A buffer to hold the pressure string, e.g., "1012 hPa"
 // Buffers for displayed strings
-static char s_pressure_buffer[16];
+static char s_pressure_buffer[32];
 static char s_temp_cond_buffer[48];
 static char s_wind_precip_buffer[40];
 
@@ -75,8 +75,18 @@ static void destroy_step_icon_layer(void);
 
 // This function runs every time the watch receives a message from the phone
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
-  // Find the tuple (data) for our key
+  // First, declare all tuples we'll need
   Tuple *pressure_tuple = dict_find(iterator, MESSAGE_KEY_PRESSURE);
+  Tuple *temp_tuple = dict_find(iterator, MESSAGE_KEY_TEMPERATURE);
+  Tuple *cond_tuple = dict_find(iterator, MESSAGE_KEY_CONDITIONS);
+  Tuple *loc_tuple = dict_find(iterator, MESSAGE_KEY_LOCATION);
+  Tuple *wind_tuple = dict_find(iterator, MESSAGE_KEY_WIND);
+  Tuple *precip_tuple = dict_find(iterator, MESSAGE_KEY_PRECIP);
+  
+  // Unit labels from JS
+  Tuple *temp_unit_tuple = dict_find(iterator, MESSAGE_KEY_TEMP_UNIT);
+  Tuple *wind_unit_tuple = dict_find(iterator, MESSAGE_KEY_WIND_UNIT);  
+  Tuple *precip_unit_tuple = dict_find(iterator, MESSAGE_KEY_PRECIP_UNIT);
 
   // If the companion sent a diagnostic/test key, show a short status immediately
   Tuple *test_tuple = dict_find(iterator, MESSAGE_KEY_PRESSURE_TEST);
@@ -124,8 +134,18 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
       }
     }
 
-    // Format the pressure into our buffer with the trend suffix
-    snprintf(s_pressure_buffer, sizeof(s_pressure_buffer), "%d hPa%s", pressure_val, trend_suffix);
+    // Format the pressure with temperature into our buffer with the trend suffix
+    // Get temperature from the global temp value if available
+    if (temp_tuple) {
+      int temp_val = (int)temp_tuple->value->int32;
+      char temp_unit[4] = "C";
+      if (temp_unit_tuple && temp_unit_tuple->type == TUPLE_CSTRING && temp_unit_tuple->value->cstring) {
+        snprintf(temp_unit, sizeof(temp_unit), "%s", temp_unit_tuple->value->cstring);
+      }
+      snprintf(s_pressure_buffer, sizeof(s_pressure_buffer), "%d%s • %d mb%s", temp_val, temp_unit, pressure_val, trend_suffix);
+    } else {
+      snprintf(s_pressure_buffer, sizeof(s_pressure_buffer), "%d mb%s", pressure_val, trend_suffix);
+    }
 
     // Set the text on our Pressure TextLayer
     text_layer_set_text(s_pressure_layer, s_pressure_buffer);
@@ -134,44 +154,23 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     APP_LOG(APP_LOG_LEVEL_INFO, "inbox_received_callback: no PRESSURE tuple found in incoming message");
   }
 
-  /* Additional tuples: temperature, conditions, location, wind, precip */
-  Tuple *temp_tuple = dict_find(iterator, MESSAGE_KEY_TEMPERATURE);
-  Tuple *cond_tuple = dict_find(iterator, MESSAGE_KEY_CONDITIONS);
-  Tuple *loc_tuple = dict_find(iterator, MESSAGE_KEY_LOCATION);
-  Tuple *wind_tuple = dict_find(iterator, MESSAGE_KEY_WIND);
-  Tuple *precip_tuple = dict_find(iterator, MESSAGE_KEY_PRECIP);
+  // Temperature and Conditions - now just conditions since temp moved to pressure line
   
   APP_LOG(APP_LOG_LEVEL_INFO, "Keys found: temp=%s cond=%s wind=%s precip=%s", 
     temp_tuple ? "YES" : "NO", cond_tuple ? "YES" : "NO", wind_tuple ? "YES" : "NO", precip_tuple ? "YES" : "NO");
-
-  
-  // Unit labels
-  Tuple *temp_unit_tuple = dict_find(iterator, MESSAGE_KEY_TEMP_UNIT);
-  Tuple *wind_unit_tuple = dict_find(iterator, MESSAGE_KEY_WIND_UNIT);
-  Tuple *precip_unit_tuple = dict_find(iterator, MESSAGE_KEY_PRECIP_UNIT);
 
   // Location
   if (loc_tuple && loc_tuple->type == TUPLE_CSTRING) {
     text_layer_set_text(s_location_layer, loc_tuple->value->cstring);
   }
 
-  // Temperature and Conditions (combined display)
-  if (temp_tuple && cond_tuple) {
-    int temp_val = (int)temp_tuple->value->int32;
+  // Temperature and Conditions - now just conditions since temp moved to pressure line
+  if (cond_tuple && cond_tuple->type == TUPLE_CSTRING && cond_tuple->value->cstring) {
     char *cond_str = cond_tuple->value->cstring;
-    
-    // Get temperature unit from JS (default to C)
-    char temp_unit[4] = "C";
-    if (temp_unit_tuple && temp_unit_tuple->type == TUPLE_CSTRING && temp_unit_tuple->value->cstring) {
-      snprintf(temp_unit, sizeof(temp_unit), "%s", temp_unit_tuple->value->cstring);
-    }
-    
-    if (cond_str) {
-      snprintf(s_temp_cond_buffer, sizeof(s_temp_cond_buffer), "%d%s • %s", temp_val, temp_unit, cond_str);
-    } else {
-      snprintf(s_temp_cond_buffer, sizeof(s_temp_cond_buffer), "%d%s", temp_val, temp_unit);
-    }
+    snprintf(s_temp_cond_buffer, sizeof(s_temp_cond_buffer), "%s", cond_str);
     text_layer_set_text(s_temp_cond_layer, s_temp_cond_buffer);
+  } else {
+    text_layer_set_text(s_temp_cond_layer, "Loading...");
   }
 
   // Wind and Precip (combined display)
@@ -304,12 +303,12 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
             // Move temperature/conditions layer down to add spacing below progress line
             GRect temp_frame = layer_get_frame(text_layer_get_layer(s_temp_cond_layer));
             int progress_h = 6;
-            int gap = 1; // Reduced from 2pt to 1pt
-            temp_frame.origin.y = progress_y + progress_h + gap; // Add 1pt gap below progress line
+            int gap = 0; // No gap below progress line to move it visually closer to conditions
+            temp_frame.origin.y = progress_y + progress_h + gap; // Minimal gap below progress line
             layer_set_frame(text_layer_get_layer(s_temp_cond_layer), temp_frame);
             
             // Also move the remaining layers down by the same amount
-            int shift_down = progress_h + gap;
+            int shift_down = progress_h + gap; // Total space used: progress height + gap below
             GRect pressure_frame = layer_get_frame(text_layer_get_layer(s_pressure_layer));
             pressure_frame.origin.y += shift_down;
             layer_set_frame(text_layer_get_layer(s_pressure_layer), pressure_frame);
@@ -405,12 +404,10 @@ static void progress_layer_draw(Layer *layer, GContext *ctx) {
 }
 
 static int calculate_progress_layer_y_position(void) {
-  // Match the original perfect layout: location_bottom + gap
-  // This is exactly how it was positioned in the original window_load
+  // Position progress line for visual centering - match window_load positioning
   GRect location_frame = layer_get_frame(text_layer_get_layer(s_location_layer));
-  int gap = 2; // Same gap used in window_load
+  int gap = 3; // 2pt standard gap + 1pt extra for visual centering
   
-  // Original calculation: current_y += location_h + gap, then progress at current_y
   int progress_y = location_frame.origin.y + location_frame.size.h + gap;
   
   return progress_y;
@@ -629,13 +626,14 @@ static void main_window_load(Window *window) {
   layer_add_child(window_layer, text_layer_get_layer(s_location_layer));
   current_y += location_h + gap;
 
-  // Update Progress Line - minimal 1pt line with dots (only if enabled)
+  // Update Progress Line - positioned for visual centering between location and conditions
   if (s_update_countdown_enabled) {
     int progress_h = 6; // Very thin line with minimal height
+    current_y += 1; // Extra 1pt gap above progress line for visual centering
     s_update_progress_layer = layer_create(GRect(0, current_y, bounds.size.w, progress_h));
     layer_set_update_proc(s_update_progress_layer, progress_layer_draw);
     layer_add_child(window_layer, s_update_progress_layer);
-    current_y += progress_h; // Minimal gap
+    current_y += progress_h; // No gap below - conditions will be placed right after
   } else {
     s_update_progress_layer = NULL; // No progress layer when disabled
   }

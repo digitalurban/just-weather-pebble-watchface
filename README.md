@@ -8,7 +8,23 @@
 
 A clean and simple watch face for Pebble smartwatches that provides the current time and essential weather information at a glance.
 
-## What's New in Version 1.9.0
+## What's New in Version 2.0.0
+
+* 🎯 **Smart Layout Optimization:** Revolutionary display layout for maximum information density
+  * **Temperature moved to pressure line** - Temperature and atmospheric pressure now displayed together (e.g., "22°C • 1015 mb +2.1")
+  * **Full conditions line** - Weather conditions now have dedicated space for complete text (supports all conditions including "Thunderstorm w/ Slight Hail")
+  * **Pressure trend preserved** - Critical storm warning information maintained with compact "mb" units
+  * **Enhanced storm warnings** - Rapid pressure drops (e.g., -4.5) clearly indicate approaching severe weather
+* ✨ **Visual Refinements:** Perfect spacing and positioning throughout the interface
+  * **Centered progress line** - Update countdown line now perfectly balanced between location and conditions
+  * **Optimized spacing** - Professional visual hierarchy with improved readability
+  * **Millibars (mb) units** - Space-efficient pressure display while maintaining meteorological accuracy
+* ⚡ **Technical Improvements:** Enhanced data handling and display efficiency
+  * Current weather data for temperature, pressure, wind, and humidity (real-time accuracy)
+  * 15-minute forecast for weather conditions only (predictive weather changes)
+  * Streamlined API calls with optimal data source selection
+
+### Previous Updates (Version 1.9.0)
 
 * 🎨 **Display Refinements:** Enhanced visual layout and text display
   * Fixed step count spacing - distance numbers no longer overlap with shoe icon
