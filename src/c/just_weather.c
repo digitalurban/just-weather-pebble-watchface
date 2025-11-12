@@ -21,6 +21,7 @@
 #define MESSAGE_KEY_STEP_UNIT 15
 #define MESSAGE_KEY_STEP_COUNT 16
 #define MESSAGE_KEY_STEP_DISTANCE 17
+#define MESSAGE_KEY_STORM_WARNING 18
 
 static Window *s_main_window;
 static TextLayer *s_time_layer;
@@ -42,11 +43,15 @@ static char s_pressure_buffer[32];
 static char s_temp_cond_buffer[48];
 static char s_wind_precip_buffer[40];
 
-
-// Hourly vibration settings
+// Hourly vibration setting
 static bool s_hourly_vibration_enabled = false;
 static bool s_update_countdown_enabled = true;
+static bool s_storm_warning_enabled = false; // Experimental storm warning feature
 static int s_last_hour = -1;
+
+// Storm warning state tracking
+static bool s_storm_warning_active = false;
+static int s_last_storm_trend = 0;
 
 // Update progress tracking
 static time_t s_last_weather_update = 0;
@@ -142,7 +147,22 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
       if (temp_unit_tuple && temp_unit_tuple->type == TUPLE_CSTRING && temp_unit_tuple->value->cstring) {
         snprintf(temp_unit, sizeof(temp_unit), "%s", temp_unit_tuple->value->cstring);
       }
-      snprintf(s_pressure_buffer, sizeof(s_pressure_buffer), "%d%s • %d mb%s", temp_val, temp_unit, pressure_val, trend_suffix);
+      
+      // Check for storm warning conditions (experimental feature)
+      bool storm_warning = false;
+      if (s_storm_warning_enabled && trend_tuple && trend_tuple->type == TUPLE_INT) {
+        int trend_tenths = (int)trend_tuple->value->int32;
+        // Storm warning: pressure drop of 30+ tenths (3.0+ mb) in 3 hours
+        if (trend_tenths <= -30) {
+          storm_warning = true;
+        }
+      }
+      
+      if (storm_warning) {
+        snprintf(s_pressure_buffer, sizeof(s_pressure_buffer), "%d%s • %d mb%s ⚠️", temp_val, temp_unit, pressure_val, trend_suffix);
+      } else {
+        snprintf(s_pressure_buffer, sizeof(s_pressure_buffer), "%d%s • %d mb%s", temp_val, temp_unit, pressure_val, trend_suffix);
+      }
     } else {
       snprintf(s_pressure_buffer, sizeof(s_pressure_buffer), "%d mb%s", pressure_val, trend_suffix);
     }
@@ -165,13 +185,58 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
   }
 
   // Temperature and Conditions - now just conditions since temp moved to pressure line
-  if (cond_tuple && cond_tuple->type == TUPLE_CSTRING && cond_tuple->value->cstring) {
-    char *cond_str = cond_tuple->value->cstring;
-    snprintf(s_temp_cond_buffer, sizeof(s_temp_cond_buffer), "%s", cond_str);
-    text_layer_set_text(s_temp_cond_layer, s_temp_cond_buffer);
+  // Check for storm warning override (experimental feature)
+  bool show_storm_warning = false;
+  
+  if (s_storm_warning_enabled && pressure_tuple && pressure_tuple->type == TUPLE_INT) {
+    Tuple *trend_tuple = dict_find(iterator, MESSAGE_KEY_PRESSURE_TREND);
+    if (trend_tuple && trend_tuple->type == TUPLE_INT) {
+      int trend_tenths = (int)trend_tuple->value->int32;
+      if (trend_tenths <= -50) {
+        // Severe storm warning (5.0+ mb drop)
+        snprintf(s_temp_cond_buffer, sizeof(s_temp_cond_buffer), "🌩️ SEVERE STORM WARNING");
+        show_storm_warning = true;
+        
+        // Vibrate if this is a new or worsening severe warning
+        if (!s_storm_warning_active || trend_tenths < s_last_storm_trend) {
+          vibes_double_pulse();
+          s_storm_warning_active = true;
+          s_last_storm_trend = trend_tenths;
+        }
+      } else if (trend_tenths <= -30) {
+        // Storm warning (3.0+ mb drop)
+        snprintf(s_temp_cond_buffer, sizeof(s_temp_cond_buffer), "⚠️ STORM WARNING");
+        show_storm_warning = true;
+        
+        // Vibrate if this is a new warning (only on initial trigger)
+        if (!s_storm_warning_active) {
+          vibes_double_pulse();
+          s_storm_warning_active = true;
+          s_last_storm_trend = trend_tenths;
+        }
+      } else {
+        // Reset storm warning state when pressure stabilizes
+        s_storm_warning_active = false;
+        s_last_storm_trend = 0;
+      }
+    }
   } else {
-    text_layer_set_text(s_temp_cond_layer, "Loading...");
+    // Reset storm warning state when feature is disabled
+    s_storm_warning_active = false;
+    s_last_storm_trend = 0;
   }
+  
+  if (!show_storm_warning) {
+    // Normal conditions display
+    if (cond_tuple && cond_tuple->type == TUPLE_CSTRING && cond_tuple->value->cstring) {
+      char *cond_str = cond_tuple->value->cstring;
+      snprintf(s_temp_cond_buffer, sizeof(s_temp_cond_buffer), "%s", cond_str);
+    } else {
+      snprintf(s_temp_cond_buffer, sizeof(s_temp_cond_buffer), "Loading...");
+    }
+  }
+  
+  text_layer_set_text(s_temp_cond_layer, s_temp_cond_buffer);
 
   // Wind and Precip (combined display)
   /* Handle wind and precip data - can be integers or strings, and display even if only one is available */
@@ -349,6 +414,16 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
           }
         }
       }
+    }
+  }
+  
+  // Handle storm warning setting (experimental)
+  Tuple *storm_warning_tuple = dict_find(iterator, MESSAGE_KEY_STORM_WARNING);
+  if (storm_warning_tuple) {
+    if (storm_warning_tuple->type == TUPLE_INT) {
+      s_storm_warning_enabled = (storm_warning_tuple->value->int32 != 0);
+      APP_LOG(APP_LOG_LEVEL_INFO, "Storm warning %s", 
+              s_storm_warning_enabled ? "ENABLED" : "disabled");
     }
   }
 }

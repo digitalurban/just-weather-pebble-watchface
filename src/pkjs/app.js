@@ -13,7 +13,8 @@ var settings = {
   hourly_vibration: false,
   update_countdown: true,
   show_steps: false,
-  step_unit: 'miles'
+  step_unit: 'miles',
+  storm_warning: false
 };
 
 // Store last weather data for immediate re-sending when units change
@@ -51,6 +52,7 @@ function resendWeatherWithCurrentUnits() {
   dict[13] = settings.update_countdown ? 1 : 0; // UPDATE_COUNTDOWN_KEY = 13
   dict[14] = settings.show_steps ? 1 : 0; // SHOW_STEPS_KEY = 14  
   dict[15] = settings.step_unit === 'miles' ? 1 : 0; // STEP_UNIT_KEY = 15
+  dict[16] = settings.storm_warning ? 1 : 0; // STORM_WARNING_KEY = 16
   
   console.log('[JS] Test message dict: ' + JSON.stringify(dict));
   
@@ -622,6 +624,14 @@ button{padding:12px 25px;font-size:16px;border:none;border-radius:6px;cursor:poi
 </div>
 <div class="description">Choose distance measurement unit for step tracking</div>
 </div>
+<div class="setting-group">
+<div class="setting-label">⚠️ Storm Warning (Experimental)</div>
+<div class="radio-option">
+<input type="checkbox" id="storm_warning" name="storm_warning" ${settings.storm_warning ? 'checked' : ''}>
+<label for="storm_warning">Enable storm warnings</label>
+</div>
+<div class="description">Get vibration alerts and watch warnings when barometric pressure drops -3mb in 3 hours, indicating potential severe weather</div>
+</div>
 <div class="button-group">
 <div class="button-group">
 <button type="submit" class="save-btn">Save Settings</button>
@@ -689,6 +699,12 @@ Pebble.addEventListener('webviewclosed', function(e) {
         settings.step_unit = newSettings.step_unit;
       } else {
         console.log('[JS] step_unit not found in new settings');
+      }
+      if (typeof newSettings.storm_warning !== 'undefined') {
+        console.log('[JS] Updating storm_warning from ' + settings.storm_warning + ' to ' + newSettings.storm_warning);
+        settings.storm_warning = newSettings.storm_warning;
+      } else {
+        console.log('[JS] storm_warning not found in new settings');
       }
       
       console.log('[JS] Updated settings: ' + JSON.stringify(settings));
