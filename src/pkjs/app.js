@@ -76,6 +76,7 @@ function loadSettings() {
       if (typeof savedSettings.update_countdown !== 'undefined') settings.update_countdown = savedSettings.update_countdown;
       if (typeof savedSettings.show_steps !== 'undefined') settings.show_steps = savedSettings.show_steps;
       if (savedSettings.step_unit) settings.step_unit = savedSettings.step_unit;
+      if (typeof savedSettings.storm_warning !== 'undefined') settings.storm_warning = savedSettings.storm_warning;
       console.log('[JS] Loaded settings:', JSON.stringify(settings));
     } catch (e) {
       console.log('[JS] Error loading settings, using defaults');
@@ -649,7 +650,8 @@ document.getElementById('settingsForm').addEventListener('submit', function(e) {
     hourly_vibration: document.getElementById('hourly_vibration').checked,
     update_countdown: document.getElementById('update_countdown').checked,
     show_steps: document.getElementById('show_steps').checked,
-    step_unit: document.querySelector('input[name="step_unit"]:checked').value
+    step_unit: document.querySelector('input[name="step_unit"]:checked').value,
+    storm_warning: document.getElementById('storm_warning').checked
   };
   document.location = 'pebblejs://close#' + encodeURIComponent(JSON.stringify(settings));
 });
