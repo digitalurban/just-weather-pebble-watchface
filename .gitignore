@@ -8,3 +8,5 @@
 
 # VSCode
 *.code-workspace
+**/build/.lock-waf*
+**/build/c4che/*.py
