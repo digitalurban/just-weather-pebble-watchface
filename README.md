@@ -8,7 +8,21 @@
 
 A clean and simple watch face for Pebble smartwatches that provides the current time and essential weather information at a glance.
 
-## What's New in Version 2.0.0
+## What's New in Version 2.3.0
+
+* ⚠️ **Storm Warning System (Experimental):** Advanced severe weather alerts for your safety
+  * **Pressure Drop Detection:** Monitors barometric pressure changes over 3-hour periods
+  * **Vibration Alerts:** Double pulse vibration when storm conditions are detected
+  * **Two Warning Levels:**
+    - ⚠️ **Storm Warning** - Pressure drops -3mb in 3 hours (moderate storm conditions)
+    - 🌩️ **Severe Storm Warning** - Pressure drops -5mb in 3 hours (dangerous weather incoming)
+  * **Smart Alert Logic:** Only vibrates on new warnings or worsening conditions (prevents spam)
+  * **Visual Override:** Storm warnings replace weather conditions line when active
+  * **Optional Setting:** Enable/disable through companion app settings
+* 🔒 **Security Enhancement:** Clean build process with no sensitive data in build artifacts
+* 🎯 **Meteorological Accuracy:** Follows Garmin and professional weather station standards for storm detection
+
+### Previous Updates (Version 2.0.0)
 
 * 🎯 **Smart Layout Optimization:** Revolutionary display layout for maximum information density
   * **Temperature moved to pressure line** - Temperature and atmospheric pressure now displayed together (e.g., "22°C • 1015 mb +2.1")
@@ -132,6 +146,7 @@ Access the settings page through your Pebble app or by long-pressing the select 
 * **Update Countdown:** Show or hide the weather update progress indicator (enabled by default)
 * **Step Tracking:** Enable or disable step count and distance display (replaces wind/precipitation when enabled)
 * **Distance Units:** Choose between miles (mi) and kilometers (km) for step distance display
+* **⚠️ Storm Warning (Experimental):** Enable storm warning alerts when pressure drops -3mb in 3 hours, indicating potential severe weather
 
 All changes take effect immediately with dynamic layout adjustment - no need to restart the app!
 
