@@ -28,7 +28,7 @@ A clean and simple watch face for Pebble smartwatches that provides the current 
   * **Temperature moved to pressure line** - Temperature and atmospheric pressure now displayed together (e.g., "22°C • 1015 mb +2.1")
   * **Full conditions line** - Weather conditions now have dedicated space for complete text (supports all conditions including "Thunderstorm w/ Slight Hail")
   * **Pressure trend preserved** - Critical storm warning information maintained with compact "mb" units
-  * **Enhanced storm warnings** - Rapid pressure drops (e.g., -4.5) clearly indicate approaching severe weather
+  * **Enhanced storm warnings** - Rapid pressure drops (e.g., -3mb) clearly indicate approaching severe weather
 * ✨ **Visual Refinements:** Perfect spacing and positioning throughout the interface
   * **Centered progress line** - Update countdown line now perfectly balanced between location and conditions
   * **Optimized spacing** - Professional visual hierarchy with improved readability
