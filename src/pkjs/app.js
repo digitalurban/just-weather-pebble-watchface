@@ -311,25 +311,25 @@ Pebble.addEventListener('ready', function(e) {
     if (code === 56) return 'Light Freezing Drizzle';
     if (code === 57) return 'Dense Freezing Drizzle';
     
-    if (code === 61) return 'Slight Rain';
+    if (code === 61) return 'Rain';
     if (code === 63) return 'Moderate Rain';
     if (code === 65) return 'Heavy Rain';
     if (code === 66) return 'Light Freezing Rain';
     if (code === 67) return 'Heavy Freezing Rain';
     
-    if (code === 71) return 'Slight Snow';
+    if (code === 71) return 'Snow';
     if (code === 73) return 'Moderate Snow';
     if (code === 75) return 'Heavy Snow';
     if (code === 77) return 'Snow Grains';
     
-    if (code === 80) return 'Slight Rain Showers';
+    if (code === 80) return 'Rain Showers';
     if (code === 81) return 'Moderate Rain Showers';
     if (code === 82) return 'Violent Rain Showers';
-    if (code === 85) return 'Slight Snow Showers';
+    if (code === 85) return 'Snow Showers';
     if (code === 86) return 'Heavy Snow Showers';
     
     if (code === 95) return 'Thunderstorm';
-    if (code === 96) return 'Thunderstorm w/ Slight Hail';
+    if (code === 96) return 'Thunderstorm w/ Hail';
     if (code === 99) return 'Thunderstorm w/ Heavy Hail';
     
     return 'Unknown (' + code + ')';
