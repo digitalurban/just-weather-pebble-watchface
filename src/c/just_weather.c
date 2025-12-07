@@ -554,7 +554,7 @@ static void update_step_display(void) {
       int whole_miles = s_current_step_distance / 10;
       int frac_miles = s_current_step_distance % 10;
       // Adjust spacing: fewer spaces for large numbers, more spaces for small numbers
-      int spacing = (s_current_step_count >= 10000) ? 2 : (s_current_step_count >= 1000) ? 4 : 6;
+      int spacing = (s_current_step_count >= 10000) ? 4 : (s_current_step_count >= 1000) ? 6 : 8;
       snprintf(s_step_display_buffer, sizeof(s_step_display_buffer), 
                "%d%*s%d.%d mi", s_current_step_count, spacing, "", whole_miles, frac_miles);
     } else {
@@ -562,7 +562,7 @@ static void update_step_display(void) {
       int whole_km = s_current_step_distance / 10;
       int frac_km = s_current_step_distance % 10;
       // Adjust spacing: fewer spaces for large numbers, more spaces for small numbers
-      int spacing = (s_current_step_count >= 10000) ? 2 : (s_current_step_count >= 1000) ? 4 : 6;
+      int spacing = (s_current_step_count >= 10000) ? 4 : (s_current_step_count >= 1000) ? 6 : 8;
       snprintf(s_step_display_buffer, sizeof(s_step_display_buffer), 
                "%d%*s%d.%d km", s_current_step_count, spacing, "", whole_km, frac_km);
     }
