@@ -459,6 +459,42 @@ Pebble.addEventListener('ready', function(e) {
             if (current.surface_pressure !== undefined) {
               pressure = current.surface_pressure;
               console.log('[JS] Current pressure: ' + pressure + ' hPa');
+              
+              // Calculate pressure trend (3-hour change in tenths of hPa)
+              var pressureHistory = JSON.parse(localStorage.getItem('pressure_history') || '{}');
+              var now = Date.now();
+              var threeHoursAgo = now - (3 * 60 * 60 * 1000);
+              
+              // Find the oldest reading from ~3 hours ago
+              var oldestTime = null;
+              var oldestPressure = null;
+              for (var timeStr in pressureHistory) {
+                var time = parseInt(timeStr);
+                if (time <= threeHoursAgo && (oldestTime === null || time > oldestTime)) {
+                  oldestTime = time;
+                  oldestPressure = pressureHistory[timeStr];
+                }
+              }
+              
+              if (oldestPressure !== null) {
+                // Pressure trend: (current - 3hr ago) * 10 = tenths of hPa
+                var trendTenths = Math.round((pressure - oldestPressure) * 10);
+                trendStr = (trendTenths >= 0 ? '+' : '') + (trendTenths / 10).toFixed(1);
+                console.log('[JS] Pressure trend (3hr): ' + trendStr + ' hPa (from ' + oldestPressure + ' to ' + pressure + ')');
+              }
+              
+              // Store current pressure with timestamp
+              pressureHistory[now] = pressure;
+              
+              // Clean up readings older than 4 hours
+              var fourHoursAgo = now - (4 * 60 * 60 * 1000);
+              for (var timeStr in pressureHistory) {
+                if (parseInt(timeStr) < fourHoursAgo) {
+                  delete pressureHistory[timeStr];
+                }
+              }
+              
+              localStorage.setItem('pressure_history', JSON.stringify(pressureHistory));
             }
           }
           
