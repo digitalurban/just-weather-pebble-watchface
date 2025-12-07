@@ -550,17 +550,21 @@ static void update_step_display(void) {
     
     // Format step display - icon positioned between count and distance
     if (s_step_unit_miles) {
-      // Display miles with 1 decimal place - extra spacing to prevent overlap
+      // Display miles with 1 decimal place - dynamic spacing based on step count width
       int whole_miles = s_current_step_distance / 10;
       int frac_miles = s_current_step_distance % 10;
+      // Adjust spacing: fewer spaces for large numbers, more spaces for small numbers
+      int spacing = (s_current_step_count >= 10000) ? 2 : (s_current_step_count >= 1000) ? 4 : 6;
       snprintf(s_step_display_buffer, sizeof(s_step_display_buffer), 
-               " %d        %d.%d mi", s_current_step_count, whole_miles, frac_miles);
+               "%d%*s%d.%d mi", s_current_step_count, spacing, "", whole_miles, frac_miles);
     } else {
-      // Display kilometers with 1 decimal place - extra spacing to prevent overlap
+      // Display kilometers with 1 decimal place - dynamic spacing based on step count width
       int whole_km = s_current_step_distance / 10;
       int frac_km = s_current_step_distance % 10;
+      // Adjust spacing: fewer spaces for large numbers, more spaces for small numbers
+      int spacing = (s_current_step_count >= 10000) ? 2 : (s_current_step_count >= 1000) ? 4 : 6;
       snprintf(s_step_display_buffer, sizeof(s_step_display_buffer), 
-               " %d        %d.%d km", s_current_step_count, whole_km, frac_km);
+               "%d%*s%d.%d km", s_current_step_count, spacing, "", whole_km, frac_km);
     }
     
     // Update icon position to center it properly in the gap
