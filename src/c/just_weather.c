@@ -98,6 +98,10 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
   char location_name[64];
   char temp_display[16];
   
+  // Variables that need to be accessible across scopes
+  int pressure_val = 0;
+  bool storm_warning = false;
+  
   if (loc_tuple && loc_tuple->type == TUPLE_CSTRING) {
     snprintf(location_name, sizeof(location_name), "%s", loc_tuple->value->cstring);
   } else {
@@ -134,7 +138,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
 
   if (pressure_tuple) {
     // We have the pressure! Read it as an integer
-    int pressure_val = (int)pressure_tuple->value->int32;
+    pressure_val = (int)pressure_tuple->value->int32;
 
     // Update the weather update timestamp
     s_last_weather_update = time(NULL);
@@ -165,7 +169,6 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     // Temperature only displays on location line (short names) or not at all (long names)
     
     // Check for storm warning conditions (experimental feature)
-    bool storm_warning = false;
     if (s_storm_warning_enabled && trend_tuple && trend_tuple->type == TUPLE_INT) {
       int trend_tenths = (int)trend_tuple->value->int32;
       // Storm warning: pressure drop of 30+ tenths (3.0+ mb) in 3 hours
@@ -216,8 +219,8 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
       snprintf(s_location_buffer, sizeof(s_location_buffer), "%s", location_name);
       APP_LOG(APP_LOG_LEVEL_INFO, "Location only: '%s' (long name, temp on pressure line)", s_location_buffer);
       
-      // Update pressure line to show temperature instead of trend
-      if (temp_display_len > 0) {
+      // Update pressure line to show temperature instead of trend (only if we have pressure data)
+      if (temp_display_len > 0 && pressure_val > 0) {
         if (storm_warning) {
           snprintf(s_pressure_buffer, sizeof(s_pressure_buffer), "%d mb %s ⚠️", pressure_val, temp_display);
         } else {
