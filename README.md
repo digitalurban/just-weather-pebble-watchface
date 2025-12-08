@@ -19,12 +19,12 @@ A clean and simple watch face for Pebble smartwatches that provides the current 
   * Temperature shows on location line for short location names
   * Temperature moves to pressure line for longer location names to prevent overflow
   * Maintains pressure trend information on short locations
-* **Enhanced Stability:** Variable scope improvements and boundary condition fixes
+* **Stability Improvements:** Variable scope refinements and boundary condition fixes
 
 ### Previous Updates (Version 2.3.0)
 
 * Pressure drop detection with 3-hour historical tracking
-* Smart alert logic to reduce unnecessary vibrations
+* Alert logic to reduce unnecessary vibrations
 * Visual storm warning indicators on the display
 
 ### Previous Updates (Version 2.0.0)
@@ -38,7 +38,7 @@ A clean and simple watch face for Pebble smartwatches that provides the current 
 
 ### Previous Updates (Version 1.9.0)
 
-* **Display Improvements:** Enhanced visual layout and text display
+* **Display Improvements:** Visual layout and text display refinements
   * Improved step count spacing
   * Cleaner weather condition text presentation
   * Better text positioning throughout the interface
@@ -61,7 +61,7 @@ A clean and simple watch face for Pebble smartwatches that provides the current 
   * Miles and kilometers unit selection
   * Show/hide steps toggle setting
 * **Display Management:** Toggles between weather and fitness data based on user preference
-* **Enhanced Settings:** New fitness preferences for step tracking display and distance units
+* **Settings:** New fitness preferences for step tracking display and distance units
 
 ## Features
 
