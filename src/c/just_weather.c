@@ -161,7 +161,8 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
       }
     }
 
-    // Format the pressure with trend suffix only (temperature is on location line now)
+    // Format the pressure with trend suffix
+    // Temperature only displays on location line (short names) or not at all (long names)
     
     // Check for storm warning conditions (experimental feature)
     bool storm_warning = false;
@@ -173,6 +174,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
       }
     }
     
+    // Pressure + trend only (temperature is on location line for short names)
     if (storm_warning) {
       snprintf(s_pressure_buffer, sizeof(s_pressure_buffer), "%d mb%s ⚠️", pressure_val, trend_suffix);
     } else {
@@ -192,12 +194,15 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     temp_tuple ? "YES" : "NO", cond_tuple ? "YES" : "NO", wind_tuple ? "YES" : "NO", precip_tuple ? "YES" : "NO", loc_tuple ? "YES" : "NO");
 
   // Display location with temperature if it fits
+  int location_name_len = 0;
+  int temp_display_len = 0;
+  
   if (loc_tuple && loc_tuple->type == TUPLE_CSTRING) {
     APP_LOG(APP_LOG_LEVEL_INFO, "Location tuple found: %s", loc_tuple->value->cstring);
     
     // Try to fit temperature on same line as location
-    int location_name_len = strlen(location_name);
-    int temp_display_len = strlen(temp_display);
+    location_name_len = strlen(location_name);
+    temp_display_len = strlen(temp_display);
     
     if (location_name_len <= 12 && temp_display_len > 0) {
       // Short location - fit both on one line with spacing
@@ -206,7 +211,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     } else {
       // Long location or no temp - just show location
       snprintf(s_location_buffer, sizeof(s_location_buffer), "%s", location_name);
-      APP_LOG(APP_LOG_LEVEL_INFO, "Location only: '%s'", s_location_buffer);
+      APP_LOG(APP_LOG_LEVEL_INFO, "Location only: '%s' (long name, temp will go on pressure line)", s_location_buffer);
     }
     
     text_layer_set_text(s_location_layer, s_location_buffer);
