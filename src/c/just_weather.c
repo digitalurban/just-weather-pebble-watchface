@@ -211,7 +211,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     
     if (location_name_len <= 12 && temp_display_len > 0) {
       // Short location - fit both on one line with spacing
-      snprintf(s_location_buffer, sizeof(s_location_buffer), "%s     %s", location_name, temp_display);
+      snprintf(s_location_buffer, sizeof(s_location_buffer), "%s  %s", location_name, temp_display);
       APP_LOG(APP_LOG_LEVEL_INFO, "Location with temp: '%s'", s_location_buffer);
       // Pressure line stays as-is: pressure + trend
     } else {
