@@ -42,6 +42,7 @@ static TextLayer *s_wind_precip_layer;
 static char s_pressure_buffer[32];
 static char s_temp_cond_buffer[48];
 static char s_wind_precip_buffer[40];
+static char s_location_buffer[64];  // Buffer for location string
 
 // Hourly vibration setting
 static bool s_hourly_vibration_enabled = false;
@@ -92,6 +93,27 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
   Tuple *temp_unit_tuple = dict_find(iterator, MESSAGE_KEY_TEMP_UNIT);
   Tuple *wind_unit_tuple = dict_find(iterator, MESSAGE_KEY_WIND_UNIT);  
   Tuple *precip_unit_tuple = dict_find(iterator, MESSAGE_KEY_PRECIP_UNIT);
+  
+  // Location and temperature display strings (for use across function)
+  char location_name[64];
+  char temp_display[16];
+  
+  if (loc_tuple && loc_tuple->type == TUPLE_CSTRING) {
+    snprintf(location_name, sizeof(location_name), "%s", loc_tuple->value->cstring);
+  } else {
+    location_name[0] = '\0';
+  }
+  
+  if (temp_tuple && temp_tuple->type == TUPLE_INT) {
+    int temp_val = (int)temp_tuple->value->int32;
+    char temp_unit[4] = "C";
+    if (temp_unit_tuple && temp_unit_tuple->type == TUPLE_CSTRING && temp_unit_tuple->value->cstring) {
+      snprintf(temp_unit, sizeof(temp_unit), "%s", temp_unit_tuple->value->cstring);
+    }
+    snprintf(temp_display, sizeof(temp_display), "%d%s", temp_val, temp_unit);
+  } else {
+    temp_display[0] = '\0';
+  }
 
   // If the companion sent a diagnostic/test key, show a short status immediately
   Tuple *test_tuple = dict_find(iterator, MESSAGE_KEY_PRESSURE_TEST);
@@ -139,30 +161,20 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
       }
     }
 
-    // Format the pressure with temperature into our buffer with the trend suffix
-    // Get temperature from the global temp value if available
-    if (temp_tuple) {
-      int temp_val = (int)temp_tuple->value->int32;
-      char temp_unit[4] = "C";
-      if (temp_unit_tuple && temp_unit_tuple->type == TUPLE_CSTRING && temp_unit_tuple->value->cstring) {
-        snprintf(temp_unit, sizeof(temp_unit), "%s", temp_unit_tuple->value->cstring);
+    // Format the pressure with trend suffix only (temperature is on location line now)
+    
+    // Check for storm warning conditions (experimental feature)
+    bool storm_warning = false;
+    if (s_storm_warning_enabled && trend_tuple && trend_tuple->type == TUPLE_INT) {
+      int trend_tenths = (int)trend_tuple->value->int32;
+      // Storm warning: pressure drop of 30+ tenths (3.0+ mb) in 3 hours
+      if (trend_tenths <= -30) {
+        storm_warning = true;
       }
-      
-      // Check for storm warning conditions (experimental feature)
-      bool storm_warning = false;
-      if (s_storm_warning_enabled && trend_tuple && trend_tuple->type == TUPLE_INT) {
-        int trend_tenths = (int)trend_tuple->value->int32;
-        // Storm warning: pressure drop of 30+ tenths (3.0+ mb) in 3 hours
-        if (trend_tenths <= -30) {
-          storm_warning = true;
-        }
-      }
-      
-      if (storm_warning) {
-        snprintf(s_pressure_buffer, sizeof(s_pressure_buffer), "%d%s • %d mb%s ⚠️", temp_val, temp_unit, pressure_val, trend_suffix);
-      } else {
-        snprintf(s_pressure_buffer, sizeof(s_pressure_buffer), "%d%s • %d mb%s", temp_val, temp_unit, pressure_val, trend_suffix);
-      }
+    }
+    
+    if (storm_warning) {
+      snprintf(s_pressure_buffer, sizeof(s_pressure_buffer), "%d mb%s ⚠️", pressure_val, trend_suffix);
     } else {
       snprintf(s_pressure_buffer, sizeof(s_pressure_buffer), "%d mb%s", pressure_val, trend_suffix);
     }
@@ -176,22 +188,46 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
 
   // Temperature and Conditions - now just conditions since temp moved to pressure line
   
-  APP_LOG(APP_LOG_LEVEL_INFO, "Keys found: temp=%s cond=%s wind=%s precip=%s", 
-    temp_tuple ? "YES" : "NO", cond_tuple ? "YES" : "NO", wind_tuple ? "YES" : "NO", precip_tuple ? "YES" : "NO");
+  APP_LOG(APP_LOG_LEVEL_INFO, "Keys found: temp=%s cond=%s wind=%s precip=%s loc=%s", 
+    temp_tuple ? "YES" : "NO", cond_tuple ? "YES" : "NO", wind_tuple ? "YES" : "NO", precip_tuple ? "YES" : "NO", loc_tuple ? "YES" : "NO");
 
-  // Location
+  // Display location with temperature if it fits
   if (loc_tuple && loc_tuple->type == TUPLE_CSTRING) {
-    text_layer_set_text(s_location_layer, loc_tuple->value->cstring);
+    APP_LOG(APP_LOG_LEVEL_INFO, "Location tuple found: %s", loc_tuple->value->cstring);
+    
+    // Try to fit temperature on same line as location
+    int location_name_len = strlen(location_name);
+    int temp_display_len = strlen(temp_display);
+    
+    if (location_name_len <= 12 && temp_display_len > 0) {
+      // Short location - fit both on one line with spacing
+      snprintf(s_location_buffer, sizeof(s_location_buffer), "%s     %s", location_name, temp_display);
+      APP_LOG(APP_LOG_LEVEL_INFO, "Location with temp: '%s'", s_location_buffer);
+    } else {
+      // Long location or no temp - just show location
+      snprintf(s_location_buffer, sizeof(s_location_buffer), "%s", location_name);
+      APP_LOG(APP_LOG_LEVEL_INFO, "Location only: '%s'", s_location_buffer);
+    }
+    
+    text_layer_set_text(s_location_layer, s_location_buffer);
+  } else {
+    // No location available yet - show placeholder
+    APP_LOG(APP_LOG_LEVEL_INFO, "No location tuple, showing placeholder");
+    snprintf(s_location_buffer, sizeof(s_location_buffer), "Loading...");
+    text_layer_set_text(s_location_layer, s_location_buffer);
   }
 
   // Temperature and Conditions - now just conditions since temp moved to pressure line
   // Check for storm warning override (experimental feature)
   bool show_storm_warning = false;
   
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Storm warning check: enabled=%d pressure=%d", s_storm_warning_enabled, pressure_tuple ? 1 : 0);
+  
   if (s_storm_warning_enabled && pressure_tuple && pressure_tuple->type == TUPLE_INT) {
     Tuple *trend_tuple = dict_find(iterator, MESSAGE_KEY_PRESSURE_TREND);
     if (trend_tuple && trend_tuple->type == TUPLE_INT) {
       int trend_tenths = (int)trend_tuple->value->int32;
+      APP_LOG(APP_LOG_LEVEL_INFO, "Pressure trend for storm check: %d tenths (%.1f mb)", trend_tenths, trend_tenths / 10.0);
       if (trend_tenths <= -50) {
         // Severe storm warning (5.0+ mb drop)
         snprintf(s_temp_cond_buffer, sizeof(s_temp_cond_buffer), "🌩️ SEVERE STORM WARNING");
@@ -205,11 +241,13 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
         }
       } else if (trend_tenths <= -30) {
         // Storm warning (3.0+ mb drop)
+        APP_LOG(APP_LOG_LEVEL_INFO, "STORM WARNING TRIGGERED: trend=%d tenths", trend_tenths);
         snprintf(s_temp_cond_buffer, sizeof(s_temp_cond_buffer), "⚠️ STORM WARNING");
         show_storm_warning = true;
         
         // Vibrate if this is a new warning (only on initial trigger)
         if (!s_storm_warning_active) {
+          APP_LOG(APP_LOG_LEVEL_INFO, "First storm warning - vibrating");
           vibes_double_pulse();
           s_storm_warning_active = true;
           s_last_storm_trend = trend_tenths;
@@ -703,6 +741,7 @@ static void main_window_load(Window *window) {
   text_layer_set_overflow_mode(s_location_layer, GTextOverflowModeTrailingEllipsis);
   text_layer_set_text(s_location_layer, "");
   layer_add_child(window_layer, text_layer_get_layer(s_location_layer));
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Location layer created at y=%d, height=%d, width=%d", current_y, location_h, bounds.size.w);
   current_y += location_h + gap;
 
   // Update Progress Line - positioned for visual centering between location and conditions

@@ -45,6 +45,7 @@ function resendWeatherWithCurrentUnits() {
   dict[4] = Math.round(settings.wind_unit === 'mph' ? useData.wind * 0.621371 : useData.wind); // WIND_KEY = 4
   dict[5] = Math.round(settings.precipitation_unit === 'inches' ? useData.precipitation * 0.0393701 * 100 : useData.precipitation * 10); // PRECIP_KEY = 5
   dict[6] = useData.location || 'Settings'; // LOCATION_KEY = 6 - use real location if available
+  if (typeof useData.trendTenths !== 'undefined') dict[7] = Math.round(useData.trendTenths); // PRESSURE_TREND_KEY = 7
   dict[9] = settings.temperature_unit === 'fahrenheit' ? 'F' : 'C'; // TEMP_UNIT_KEY = 9
   dict[10] = settings.wind_unit === 'mph' ? 'mph' : 'kph'; // WIND_UNIT_KEY = 10
   dict[11] = settings.precipitation_unit === 'inches' ? 'in' : 'mm'; // PRECIP_UNIT_KEY = 11
@@ -189,8 +190,8 @@ Pebble.addEventListener('ready', function(e) {
   var STEP_UNIT_KEY = (MessageKeys && typeof MessageKeys.STEP_UNIT !== 'undefined') ? MessageKeys.STEP_UNIT : 15;
 
   // --- 2. Weather Sending Helper ---
-  function sendWeatherToWatch(pressureValue, tempValue, condText, humidityValue, windValue, precipValue, pressureTrend, locationName) {
-    console.log('[JS] sendWeatherToWatch called with args:', {p: pressureValue, t: tempValue, w: windValue, pr: precipValue});
+  function sendWeatherToWatch(pressureValue, tempValue, condText, humidityValue, windValue, precipValue, pressureTrendStr, locationName, pressureTrendTenths) {
+    console.log('[JS] sendWeatherToWatch called with args:', {p: pressureValue, t: tempValue, w: windValue, pr: precipValue, loc: locationName, trendTenths: pressureTrendTenths});
     
     // Store the raw data for re-sending when units change
     lastWeatherData = {
@@ -200,13 +201,14 @@ Pebble.addEventListener('ready', function(e) {
       humidity: humidityValue,
       wind: windValue,
       precipitation: precipValue,
-      trend: pressureTrend,
+      trend: pressureTrendStr,
+      trendTenths: pressureTrendTenths,
       location: locationName
     };
     
     var dict = {};
     if (typeof pressureValue !== 'undefined') dict[PRESSURE_KEY] = Math.round(pressureValue);
-    if (typeof pressureTrend !== 'undefined') dict[PRESSURE_TREND_KEY] = pressureTrend.toString();
+    if (typeof pressureTrendTenths !== 'undefined') dict[PRESSURE_TREND_KEY] = Math.round(pressureTrendTenths);
     
     // Apply unit conversions with debug logging
     if (typeof tempValue !== 'undefined') {
@@ -237,6 +239,8 @@ Pebble.addEventListener('ready', function(e) {
     }
     
     if (typeof locationName !== 'undefined') dict[LOCATION_KEY] = locationName.toString();
+    
+    console.log('[JS] Location in dict: LOCATION_KEY=' + LOCATION_KEY + ' value=' + dict[LOCATION_KEY]);
     
     // Send unit labels so watch displays correctly
     dict[TEMP_UNIT_KEY] = getTemperatureLabel();
@@ -441,6 +445,7 @@ Pebble.addEventListener('ready', function(e) {
           var precipitation = undefined;
           var pressure = undefined;
           var trendStr = undefined;
+          var trendTenths = undefined;
 
           console.log('[JS] Using current data for temperature/pressure/wind, 15-minute forecast for conditions, daily for rainfall');
           
@@ -478,9 +483,9 @@ Pebble.addEventListener('ready', function(e) {
               
               if (oldestPressure !== null) {
                 // Pressure trend: (current - 3hr ago) * 10 = tenths of hPa
-                var trendTenths = Math.round((pressure - oldestPressure) * 10);
+                trendTenths = Math.round((pressure - oldestPressure) * 10);
                 trendStr = (trendTenths >= 0 ? '+' : '') + (trendTenths / 10).toFixed(1);
-                console.log('[JS] Pressure trend (3hr): ' + trendStr + ' hPa (from ' + oldestPressure + ' to ' + pressure + ')');
+                console.log('[JS] Pressure trend (3hr): ' + trendStr + ' hPa (from ' + oldestPressure + ' to ' + pressure + ') - raw tenths: ' + trendTenths);
               }
               
               // Store current pressure with timestamp
@@ -510,27 +515,27 @@ Pebble.addEventListener('ready', function(e) {
               console.log('[JS] Daily accumulated rainfall: ' + precipitation + ' mm');
             }
           
-          sendWeatherToWatch(pressure, currentTemp, currentCondition, humidity, windSpeed, precipitation, trendStr, locationName);
+          sendWeatherToWatch(pressure, currentTemp, currentCondition, humidity, windSpeed, precipitation, trendStr, locationName, trendTenths);
           
         } catch (ex) {
           console.log('[JS] Error parsing Open-Meteo response: ' + ex);
-          sendWeatherToWatch(1013, 20, 'Parse Error', undefined, undefined, undefined, undefined, locationName); // Send specific error
+          sendWeatherToWatch(1013, 20, 'Parse Error', undefined, undefined, undefined, undefined, locationName, undefined); // Send specific error
         }
       } else {
         // FAILURE (status 0, 404, 500, etc.)
         console.log('[JS] Open-Meteo fetch failed: HTTP status ' + xhr.status + ' -- sending fallback');
-        sendWeatherToWatch(1013, 20, 'HTTP Fail ' + xhr.status, undefined, undefined, undefined, undefined, locationName); // Send specific error
+        sendWeatherToWatch(1013, 20, 'HTTP Fail ' + xhr.status, undefined, undefined, undefined, undefined, locationName, undefined); // Send specific error
       }
     };
 
     xhr.ontimeout = function() {
       console.log('[JS] XHR TIMEOUT after ' + xhr.timeout + 'ms url=' + url);
-      sendWeatherToWatch(1013, 20, 'Timeout', undefined, undefined, undefined, undefined, locationName); // Send specific error
+      sendWeatherToWatch(1013, 20, 'Timeout', undefined, undefined, undefined, undefined, locationName, undefined); // Send specific error
     };
 
     xhr.onerror = function(e) {
       console.log('[JS] XHR ERROR url=' + url);
-      sendWeatherToWatch(1013, 20, 'Net Error', undefined, undefined, undefined, undefined, locationName); // Send specific error
+      sendWeatherToWatch(1013, 20, 'Net Error', undefined, undefined, undefined, undefined, locationName, undefined); // Send specific error
     };
     
     xhr.open('GET', url, true);
