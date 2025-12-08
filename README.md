@@ -29,14 +29,12 @@ A clean and simple watch face for Pebble smartwatches that provides the current 
 
 ### Previous Updates (Version 2.0.0)
 
-### Previous Updates (Version 2.0.0)
-
-* **Smart Layout Optimization:** Improved display layout for better information organization
+* **Display Layout:** Improved display layout for better information organization
   * Temperature and atmospheric pressure displayed together
   * Weather conditions have dedicated display space
   * Pressure trend information maintained
   * Visual updates for improved readability
-* **Data Source Optimization:** Uses current weather data for temperature, pressure, wind and humidity with 15-minute forecasts for conditions
+* **Data Sources:** Uses current weather data for temperature, pressure, wind and humidity with 15-minute forecasts for conditions
 
 ### Previous Updates (Version 1.9.0)
 
@@ -53,7 +51,7 @@ A clean and simple watch face for Pebble smartwatches that provides the current 
 
 * **Rainfall Display:** Shows daily accumulated rainfall instead of instantaneous rates
 * **Weather Forecasting:** Uses 15-minute forecast data for weather conditions
-* **Multi-Endpoint API:** Optimized use of different weather data endpoints for appropriate granularity
+* **Multi-Endpoint API:** Uses different weather data endpoints for appropriate data granularity
 
 ### Previous Updates (Version 1.6.0)
 
@@ -62,7 +60,7 @@ A clean and simple watch face for Pebble smartwatches that provides the current 
   * Distance display with consistent formatting
   * Miles and kilometers unit selection
   * Show/hide steps toggle setting
-* **Smart Display Management:** Toggles between weather and fitness data based on user preference
+* **Display Management:** Toggles between weather and fitness data based on user preference
 * **Enhanced Settings:** New fitness preferences for step tracking display and distance units
 
 ## Features
@@ -101,7 +99,7 @@ Changes take effect immediately on your watch.
 ### APIs Used
 
 * **Weather Data:** [Open-Meteo API](https://open-meteo.com/) - Provides current weather conditions, atmospheric pressure, wind speed, and precipitation data
-* **Reverse Geocoding:** [Nominatim (OpenStreetMap)](https://nominatim.openstreetmap.org/) - Converts GPS coordinates to human-readable location names with high accuracy
+* **Reverse Geocoding:** [Nominatim (OpenStreetMap)](https://nominatim.openstreetmap.org/) - Converts GPS coordinates to human-readable location names
 
 ## Project Structure
 
