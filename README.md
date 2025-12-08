@@ -8,125 +8,73 @@
 
 A clean and simple watch face for Pebble smartwatches that provides the current time and essential weather information at a glance.
 
-## What's New in Version 2.3.0
+## What's New in Version 3.0.0
 
-* ⚠️ **Storm Warning System (Experimental):** Advanced severe weather alerts for your safety
-  * **Pressure Drop Detection:** Monitors barometric pressure changes over 3-hour periods
-  * **Vibration Alerts:** Double pulse vibration when storm conditions are detected
-  * **Two Warning Levels:**
-    - ⚠️ **Storm Warning** - Pressure drops -3mb in 3 hours (moderate storm conditions)
-    - 🌩️ **Severe Storm Warning** - Pressure drops -5mb in 3 hours (dangerous weather incoming)
-  * **Smart Alert Logic:** Only vibrates on new warnings or worsening conditions (prevents spam)
-  * **Visual Override:** Storm warnings replace weather conditions line when active
-  * **Optional Setting:** Enable/disable through companion app settings
-* 🔒 **Security Enhancement:** Clean build process with no sensitive data in build artifacts
-* 🎯 **Meteorological Accuracy:** Follows Garmin and professional weather station standards for storm detection
+* **Storm Warning System:** Barometric pressure monitoring for weather alerts
+  * Monitors pressure changes over 3-hour periods using historical data tracking
+  * Vibration alerts when pressure drops 3mb or more in 3 hours
+  * Displays warning message during significant pressure events
+  * Optional setting to enable/disable storm warnings
+* **Improved Display Layout:** Better temperature display for longer location names
+  * Temperature shows on location line for short location names
+  * Temperature moves to pressure line for longer location names to prevent overflow
+  * Maintains pressure trend information on short locations
+* **Enhanced Stability:** Variable scope improvements and boundary condition fixes
+
+### Previous Updates (Version 2.3.0)
+
+* Pressure drop detection with 3-hour historical tracking
+* Smart alert logic to reduce unnecessary vibrations
+* Visual storm warning indicators on the display
 
 ### Previous Updates (Version 2.0.0)
 
-* 🎯 **Smart Layout Optimization:** Revolutionary display layout for maximum information density
-  * **Temperature moved to pressure line** - Temperature and atmospheric pressure now displayed together (e.g., "22°C • 1015 mb +2.1")
-  * **Full conditions line** - Weather conditions now have dedicated space for complete text (supports all conditions including "Thunderstorm w/ Slight Hail")
-  * **Pressure trend preserved** - Critical storm warning information maintained with compact "mb" units
-  * **Enhanced storm warnings** - Rapid pressure drops (e.g., -3mb) clearly indicate approaching severe weather
-* ✨ **Visual Refinements:** Perfect spacing and positioning throughout the interface
-  * **Centered progress line** - Update countdown line now perfectly balanced between location and conditions
-  * **Optimized spacing** - Professional visual hierarchy with improved readability
-  * **Millibars (mb) units** - Space-efficient pressure display while maintaining meteorological accuracy
-* ⚡ **Technical Improvements:** Enhanced data handling and display efficiency
-  * Current weather data for temperature, pressure, wind, and humidity (real-time accuracy)
-  * 15-minute forecast for weather conditions only (predictive weather changes)
-  * Streamlined API calls with optimal data source selection
+### Previous Updates (Version 2.0.0)
+
+* **Smart Layout Optimization:** Improved display layout for better information organization
+  * Temperature and atmospheric pressure displayed together
+  * Weather conditions have dedicated display space
+  * Pressure trend information maintained
+  * Visual updates for improved readability
+* **Data Source Optimization:** Uses current weather data for temperature, pressure, wind and humidity with 15-minute forecasts for conditions
 
 ### Previous Updates (Version 1.9.0)
 
-* 🎨 **Display Refinements:** Enhanced visual layout and text display
-  * Fixed step count spacing - distance numbers no longer overlap with shoe icon
-  * Removed unnecessary ellipsis from weather conditions (e.g., "Slight Rain" displays without dots)
-  * Improved text positioning for better readability at zero steps/distance
-  * Cleaner presentation across all display elements
+* **Display Improvements:** Enhanced visual layout and text display
+  * Improved step count spacing
+  * Cleaner weather condition text presentation
+  * Better text positioning throughout the interface
 
 ### Previous Updates (Version 1.8.0)
 
-* 🎯 **Optimized Data Sources:** Perfect balance of accuracy and responsiveness
-  * **Current data** for temperature, pressure, wind speed, and humidity (most accurate present conditions)
-  * **15-minute forecast** for weather conditions only (upcoming weather changes)
-  * **Daily accumulated rainfall** for meaningful precipitation totals
-  * Eliminates forecast lag for measurements while maintaining predictive conditions
-* ⚡ **Enhanced API Efficiency:** Streamlined data retrieval with optimal endpoints
-  * Reduced API complexity while maintaining comprehensive weather information
-  * Faster response times with current weather measurements
-  * More accurate short-term condition forecasting
+* **Data Source Selection:** Uses current weather data for real-time accuracy with 15-minute forecasts for conditions and daily rainfall totals
 
 ### Previous Updates (Version 1.7.0)
 
-* 🌧️ **Enhanced Rainfall Display:** Improved precipitation accuracy with daily accumulated rainfall
-  * Shows total rainfall accumulated throughout the current day instead of instantaneous rates
-  * More meaningful precipitation data for better weather awareness
-  * Maintains millimeter/inch unit preferences with accurate daily totals
-* 🎯 **Optimized Weather Forecasting:** Enhanced forecast accuracy using proper 15-minute data
-  * Uses actual 15-minute forecast data instead of hourly approximations for current conditions
-  * Improved weather condition detection with more responsive updates
-  * Better alignment between displayed conditions and real-time weather
-* ⚡ **Smart API Integration:** Multi-endpoint weather data optimization
-  * 15-minute forecast for current conditions (most accurate short-term data)
-  * Hourly forecast for atmospheric pressure (appropriate granularity)
-  * Daily forecast for accumulated rainfall (meaningful precipitation totals)
-  * Reduced API calls while maintaining data accuracy
+* **Rainfall Display:** Shows daily accumulated rainfall instead of instantaneous rates
+* **Weather Forecasting:** Uses 15-minute forecast data for weather conditions
+* **Multi-Endpoint API:** Optimized use of different weather data endpoints for appropriate granularity
 
 ### Previous Updates (Version 1.6.0)
 
-* �‍♂️ **Step Tracking Integration:** Complete fitness tracking with Health API integration
-  * Real-time step count and distance display with minute-by-minute updates
-  * Authentic Google Material Design walking icon positioned between step count and distance
-  * Miles/kilometers unit selection with consistent decimal formatting (1 decimal place for both units)
-  * Show/hide steps toggle setting - replaces wind/precipitation line when enabled
-  * Minimal battery impact - leverages existing minute timer for efficient updates
-* 🎯 **Smart Display Management:** Dynamic layout switching between weather and fitness data
-  * Seamlessly toggles between wind/precipitation and step tracking based on user preference
-  * Clean icon positioning in the center of the step display line
-  * Optimized text spacing to prevent overlap with the walking icon
-* ⚙️ **Enhanced Settings:** New fitness preferences in the settings page:
-  * **Show Steps:** Enable/disable step tracking display
-  * **Distance Units:** Choose between miles (mi) and kilometers (km) for step distance
-  * Real-time settings updates with immediate display refresh
+* **Step Tracking Integration:** Real-time step count and distance display using Health API
+  * Step count updates with minute-by-minute frequency
+  * Distance display with consistent formatting
+  * Miles and kilometers unit selection
+  * Show/hide steps toggle setting
+* **Smart Display Management:** Toggles between weather and fitness data based on user preference
+* **Enhanced Settings:** New fitness preferences for step tracking display and distance units
 
 ## Features
 
-* **Time:** Displays the current time in a large, easy-to-read font with optimized spacing.
-* **Weather Update Progress:** Visual countdown indicator showing time until next weather refresh (15-minute cycle):
-    * Horizontal progress line with dot indicators  
-    * Shows elapsed time since last update with filled/empty dots
-    * Clean spacing that integrates seamlessly with the watch face design
-    * **Optional:** Can be disabled for a cleaner look through settings
-* **Hourly Vibration:** Optional gentle vibration alert at the top of each hour for time awareness during meetings or focused work.
-* **Configurable Units:** Comprehensive settings for personalizing your weather display:
-    * **Temperature:** Switch between Celsius (°C) and Fahrenheit (°F)
-    * **Wind Speed:** Choose miles per hour (mph) or kilometers per hour (km/h)  
-    * **Precipitation:** Select millimeters (mm) or inches (in)
-    * **Immediate Updates:** All unit changes take effect instantly on your watch
-* **Enhanced Geolocation:** Automatically detects your current location with improved accuracy:
-    * Uses Nominatim (OpenStreetMap) for precise reverse geocoding
-    * Smart location detection prioritizing local names (village → hamlet → suburb → town → city → county)
-    * Robust error handling with London fallback coordinates
-    * Proper timeout handling (10 seconds) for reliable operation
-* **Fresh Weather Data:** Optimized data sources for maximum accuracy and responsiveness:
-    * Current weather data for temperature, pressure, wind speed, and humidity (real-time accuracy)
-    * 15-minute forecast for weather conditions to show upcoming changes
-    * Daily accumulated rainfall for meaningful precipitation totals
-    * Visual progress indicator shows time remaining until next update
-* **Current Weather:**
-    * **Location:** Shows the most relevant local place name for your current position.
-    * **Temperature:** Current temperature with weather conditions (displayed in your preferred unit).
-    * **Conditions:** Detailed weather descriptions covering 25+ specific conditions from Open-Meteo (Clear Sky, Thunderstorm, Heavy Rain, etc.).
-    * **Pressure:** Current atmospheric pressure in hPa, with 3-hour trend indicator showing changes.
-    * **Wind & Precipitation:** Current wind speed and daily accumulated rainfall (displayed in your preferred units).
-* **Step Tracking (NEW):**
-    * **Step Count:** Real-time daily step counter using Pebble Health API with minute-by-minute updates.
-    * **Distance:** Calculated walking distance with consistent formatting (1 decimal place for both miles and kilometers).
-    * **Google Material Design Icon:** Authentic directions_walk icon positioned cleanly between step count and distance.
-    * **Smart Display:** Replaces wind/precipitation line when step tracking is enabled for clean, focused layout.
-    * **Minimal Battery Impact:** Efficient updates leveraging existing minute timer - less than 1% additional battery drain.
+* **Time:** Displays the current time in a large, easy-to-read font.
+* **Weather Update Progress:** Visual indicator showing time until next weather refresh (15-minute cycle).
+* **Hourly Vibration:** Optional vibration alert at the top of each hour.
+* **Configurable Units:** Settings for temperature, wind speed, and precipitation units with immediate updates.
+* **Geolocation:** Automatically detects your current location and displays the local place name.
+* **Weather Data:** Current weather including temperature, conditions, pressure with trend, wind speed, and precipitation.
+* **Step Tracking:** Real-time step count and distance display with mile/kilometer selection.
+* **Storm Warnings:** Optional pressure-based alerts for significant pressure changes.
 
 ## Technical Details
 
@@ -137,18 +85,18 @@ This project consists of two main parts:
 
 ## How to Configure Settings
 
-Access the settings page through your Pebble app or by long-pressing the select button on your watch:
+Access the settings page through your Pebble app:
 
-* **Temperature Units:** Choose between Celsius (°C) and Fahrenheit (°F)
-* **Wind Speed Units:** Select mph or km/h for wind speed display
-* **Precipitation Units:** Pick millimeters (mm) or inches (in) for daily rainfall total display
-* **Hourly Vibration:** Enable or disable gentle vibration alerts at the top of each hour
-* **Update Countdown:** Show or hide the weather update progress indicator (enabled by default)
-* **Step Tracking:** Enable or disable step count and distance display (replaces wind/precipitation when enabled)
-* **Distance Units:** Choose between miles (mi) and kilometers (km) for step distance display
-* **⚠️ Storm Warning (Experimental):** Enable storm warning alerts when pressure drops -3mb in 3 hours, indicating potential severe weather
+* **Temperature Units:** Celsius (°C) or Fahrenheit (°F)
+* **Wind Speed Units:** mph or km/h
+* **Precipitation Units:** mm or inches
+* **Hourly Vibration:** Enable or disable hourly alerts
+* **Update Countdown:** Show or hide the weather update progress indicator
+* **Step Tracking:** Enable or disable step count display
+* **Distance Units:** miles (mi) or kilometers (km)
+* **Storm Warnings:** Enable optional pressure-based weather alerts
 
-All changes take effect immediately with dynamic layout adjustment - no need to restart the app!
+Changes take effect immediately on your watch.
 
 ### APIs Used
 
