@@ -174,7 +174,9 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
       }
     }
     
-    // Pressure + trend only (temperature is on location line for short names)
+    // Pressure formatting depends on whether temp is on location line or not
+    // We'll update this after checking location length - for now, prepare both variants
+    // Default: Pressure + trend (used when temp fits on location line)
     if (storm_warning) {
       snprintf(s_pressure_buffer, sizeof(s_pressure_buffer), "%d mb%s ⚠️", pressure_val, trend_suffix);
     } else {
@@ -208,10 +210,20 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
       // Short location - fit both on one line with spacing
       snprintf(s_location_buffer, sizeof(s_location_buffer), "%s     %s", location_name, temp_display);
       APP_LOG(APP_LOG_LEVEL_INFO, "Location with temp: '%s'", s_location_buffer);
+      // Pressure line stays as-is: pressure + trend
     } else {
-      // Long location or no temp - just show location
+      // Long location - show location only, and move temp to pressure line
       snprintf(s_location_buffer, sizeof(s_location_buffer), "%s", location_name);
-      APP_LOG(APP_LOG_LEVEL_INFO, "Location only: '%s' (long name, temp will go on pressure line)", s_location_buffer);
+      APP_LOG(APP_LOG_LEVEL_INFO, "Location only: '%s' (long name, temp on pressure line)", s_location_buffer);
+      
+      // Update pressure line to show temperature instead of trend
+      if (temp_display_len > 0) {
+        if (storm_warning) {
+          snprintf(s_pressure_buffer, sizeof(s_pressure_buffer), "%d mb %s ⚠️", pressure_val, temp_display);
+        } else {
+          snprintf(s_pressure_buffer, sizeof(s_pressure_buffer), "%d mb %s", pressure_val, temp_display);
+        }
+      }
     }
     
     text_layer_set_text(s_location_layer, s_location_buffer);
