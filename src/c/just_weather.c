@@ -612,8 +612,8 @@ static void update_step_display(void) {
       int whole_miles = s_current_step_distance / 10;
       int frac_miles = s_current_step_distance % 10;
       // Adjust spacing: fewer spaces for large numbers, more spaces for small numbers
-      // Special handling for 0 steps to prevent icon overlap
-      int spacing = (s_current_step_count == 0) ? 10 : 
+      // Extra spacing for 0 steps to move distance right away from centered icon
+      int spacing = (s_current_step_count == 0) ? 12 : 
                     (s_current_step_count >= 10000) ? 4 : 
                     (s_current_step_count >= 1000) ? 6 : 8;
       snprintf(s_step_display_buffer, sizeof(s_step_display_buffer), 
@@ -623,8 +623,8 @@ static void update_step_display(void) {
       int whole_km = s_current_step_distance / 10;
       int frac_km = s_current_step_distance % 10;
       // Adjust spacing: fewer spaces for large numbers, more spaces for small numbers
-      // Special handling for 0 steps to prevent icon overlap
-      int spacing = (s_current_step_count == 0) ? 10 : 
+      // Extra spacing for 0 steps to move distance right away from centered icon
+      int spacing = (s_current_step_count == 0) ? 12 : 
                     (s_current_step_count >= 10000) ? 4 : 
                     (s_current_step_count >= 1000) ? 6 : 8;
       snprintf(s_step_display_buffer, sizeof(s_step_display_buffer), 
