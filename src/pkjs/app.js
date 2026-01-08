@@ -53,7 +53,7 @@ function resendWeatherWithCurrentUnits() {
   dict[13] = settings.update_countdown ? 1 : 0; // UPDATE_COUNTDOWN_KEY = 13
   dict[14] = settings.show_steps ? 1 : 0; // SHOW_STEPS_KEY = 14  
   dict[15] = settings.step_unit === 'miles' ? 1 : 0; // STEP_UNIT_KEY = 15
-  dict[16] = settings.storm_warning ? 1 : 0; // STORM_WARNING_KEY = 16
+  dict[18] = settings.storm_warning ? 1 : 0; // STORM_WARNING_KEY = 18
   
   console.log('[JS] Test message dict: ' + JSON.stringify(dict));
   
@@ -781,3 +781,8 @@ Pebble.addEventListener('webviewclosed', function(e) {
 });
 
 console.log('[JS] src/pkjs/app.js loaded.');
+
+// Load settings and send them to the watch on startup
+loadSettings();
+console.log('[JS] Settings loaded on startup, sending to watch...');
+resendWeatherWithCurrentUnits();

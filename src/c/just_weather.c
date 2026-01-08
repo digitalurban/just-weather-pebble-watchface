@@ -30,9 +30,6 @@ static Layer *s_update_progress_layer;
 static TextLayer *s_temp_cond_layer;
 static TextLayer *s_pressure_layer;
 static TextLayer *s_wind_precip_layer;
-// Separate TextLayers used when showing steps (placed left and right of the icon)
-static TextLayer *s_steps_count_layer;
-static TextLayer *s_steps_distance_layer;
 // Icon layer removed: conditions will be shown as text only
 
 // Condition icon code: 0=clear,1=partly,2=cloudy,3=rain,4=snow,5=fog,6=unknown
@@ -184,7 +181,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     // We'll update this after checking location length - for now, prepare both variants
     // Default: Pressure + trend (used when temp fits on location line)
     if (storm_warning) {
-      snprintf(s_pressure_buffer, sizeof(s_pressure_buffer), "%d mb%s ⚠️", pressure_val, trend_suffix);
+      snprintf(s_pressure_buffer, sizeof(s_pressure_buffer), "%d mb%s", pressure_val, trend_suffix);
     } else {
       snprintf(s_pressure_buffer, sizeof(s_pressure_buffer), "%d mb%s", pressure_val, trend_suffix);
     }
@@ -213,7 +210,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
     temp_display_len = strlen(temp_display);
     
     if (location_name_len <= 12 && temp_display_len > 0) {
-      // Short location - fit both on one line with spacing
+      // Short location - fit both on one line with minimal spacing to prevent overflow
       snprintf(s_location_buffer, sizeof(s_location_buffer), "%s  %s", location_name, temp_display);
       APP_LOG(APP_LOG_LEVEL_INFO, "Location with temp: '%s'", s_location_buffer);
       // Pressure line stays as-is: pressure + trend
@@ -225,7 +222,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
       // Update pressure line to show temperature instead of trend (only if we have pressure data)
       if (temp_display_len > 0 && pressure_val > 0) {
         if (storm_warning) {
-          snprintf(s_pressure_buffer, sizeof(s_pressure_buffer), "%d mb %s ⚠️", pressure_val, temp_display);
+          snprintf(s_pressure_buffer, sizeof(s_pressure_buffer), "%d mb %s", pressure_val, temp_display);
         } else {
           snprintf(s_pressure_buffer, sizeof(s_pressure_buffer), "%d mb %s", pressure_val, temp_display);
         }
@@ -253,7 +250,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
       APP_LOG(APP_LOG_LEVEL_INFO, "Pressure trend for storm check: %d tenths (%.1f mb)", trend_tenths, trend_tenths / 10.0);
       if (trend_tenths <= -50) {
         // Severe storm warning (5.0+ mb drop)
-        snprintf(s_temp_cond_buffer, sizeof(s_temp_cond_buffer), "🌩️ SEVERE STORM WARNING");
+        snprintf(s_temp_cond_buffer, sizeof(s_temp_cond_buffer), "SEVERE STORM WARNING");
         show_storm_warning = true;
         
         // Vibrate if this is a new or worsening severe warning
@@ -265,7 +262,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
       } else if (trend_tenths <= -30) {
         // Storm warning (3.0+ mb drop)
         APP_LOG(APP_LOG_LEVEL_INFO, "STORM WARNING TRIGGERED: trend=%d tenths", trend_tenths);
-        snprintf(s_temp_cond_buffer, sizeof(s_temp_cond_buffer), "⚠️ STORM WARNING");
+        snprintf(s_temp_cond_buffer, sizeof(s_temp_cond_buffer), "STORM WARNING");
         show_storm_warning = true;
         
         // Vibrate if this is a new warning (only on initial trigger)
@@ -280,8 +277,13 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
         s_storm_warning_active = false;
         s_last_storm_trend = 0;
       }
+    } else {
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Storm warning enabled but no pressure trend tuple found");
     }
   } else {
+    if (!s_storm_warning_enabled) {
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Storm warning feature is disabled");
+    }
     // Reset storm warning state when feature is disabled
     s_storm_warning_active = false;
     s_last_storm_trend = 0;
@@ -614,72 +616,43 @@ static void update_step_display(void) {
       // Display miles with 1 decimal place - dynamic spacing based on step count width
       int whole_miles = s_current_step_distance / 10;
       int frac_miles = s_current_step_distance % 10;
-      // Adjust spacing: fewer spaces for large numbers, more spaces for small numbers
-      // Extra spacing for 0 steps to move distance right away from centered icon
-      int spacing = (s_current_step_count == 0) ? 12 : 
-                    (s_current_step_count >= 10000) ? 4 : 
-                    (s_current_step_count >= 1000) ? 6 : 8;
+      // Pull count slightly toward center; widen right gap for balance
+      int left_pad = (s_current_step_count == 0) ? 3 : (s_current_step_count < 1000) ? 2 : 1;
+      int spacing = (s_current_step_count == 0) ? 14 :
+        (s_current_step_count >= 10000) ? 6 : (s_current_step_count >= 1000) ? 8 : 10;
       snprintf(s_step_display_buffer, sizeof(s_step_display_buffer), 
-               "%d%*s%d.%d mi", s_current_step_count, spacing, "", whole_miles, frac_miles);
+           "%*s%d%*s%d.%d mi", left_pad, "", s_current_step_count, spacing, "", whole_miles, frac_miles);
     } else {
       // Display kilometers with 1 decimal place - dynamic spacing based on step count width
       int whole_km = s_current_step_distance / 10;
       int frac_km = s_current_step_distance % 10;
-      // Adjust spacing: fewer spaces for large numbers, more spaces for small numbers
-      // Extra spacing for 0 steps to move distance right away from centered icon
-      int spacing = (s_current_step_count == 0) ? 12 : 
-                    (s_current_step_count >= 10000) ? 4 : 
-                    (s_current_step_count >= 1000) ? 6 : 8;
+      int left_pad = (s_current_step_count == 0) ? 3 : (s_current_step_count < 1000) ? 2 : 1;
+      int spacing = (s_current_step_count == 0) ? 14 :
+        (s_current_step_count >= 10000) ? 6 : (s_current_step_count >= 1000) ? 8 : 10;
       snprintf(s_step_display_buffer, sizeof(s_step_display_buffer), 
-               "%d%*s%d.%d km", s_current_step_count, spacing, "", whole_km, frac_km);
+           "%*s%d%*s%d.%d km", left_pad, "", s_current_step_count, spacing, "", whole_km, frac_km);
     }
     
-    // Position the icon centered and place count/distance to either side
+    // Update icon position to center it properly in the gap
     if (s_shoe_icon_layer) {
+      // Get the wind/precip layer position for vertical alignment
       GRect text_frame = layer_get_frame(text_layer_get_layer(s_wind_precip_layer));
+      
+      // Position icon in the center of the screen horizontally
       int icon_x = (144 - 16) / 2; // Center the 16px icon horizontally
+      
       GRect icon_frame = GRect(icon_x, text_frame.origin.y + 9, 16, 16); // Align with text baseline
       layer_set_frame(bitmap_layer_get_layer(s_shoe_icon_layer), icon_frame);
-      layer_set_hidden(bitmap_layer_get_layer(s_shoe_icon_layer), false);
     }
-
-    // Hide the single wind/precip layer and use the two step text layers
-    layer_set_hidden(text_layer_get_layer(s_wind_precip_layer), true);
-    if (s_steps_count_layer && s_steps_distance_layer) {
-      // Prepare left (count) and right (distance) strings
-      char count_buf[32] = "";
-      char dist_buf[32] = "";
-      if (s_step_unit_miles) {
-        int whole_miles = s_current_step_distance / 10;
-        int frac_miles = s_current_step_distance % 10;
-        snprintf(dist_buf, sizeof(dist_buf), "%d.%d mi", whole_miles, frac_miles);
-      } else {
-        int whole_km = s_current_step_distance / 10;
-        int frac_km = s_current_step_distance % 10;
-        snprintf(dist_buf, sizeof(dist_buf), "%d.%d km", whole_km, frac_km);
-      }
-      snprintf(count_buf, sizeof(count_buf), "%d", s_current_step_count);
-
-      text_layer_set_text(s_steps_count_layer, count_buf);
-      text_layer_set_text(s_steps_distance_layer, dist_buf);
-      layer_set_hidden(text_layer_get_layer(s_steps_count_layer), false);
-      layer_set_hidden(text_layer_get_layer(s_steps_distance_layer), false);
-      // Diagnostic logs: show what we're placing
-      APP_LOG(APP_LOG_LEVEL_DEBUG, "Step left='%s' right='%s'", count_buf, dist_buf);
-      GRect cf = layer_get_frame(text_layer_get_layer(s_steps_count_layer));
-      GRect df = layer_get_frame(text_layer_get_layer(s_steps_distance_layer));
-      APP_LOG(APP_LOG_LEVEL_DEBUG, "Step layers frames: count=(%d,%d,%d,%d) dist=(%d,%d,%d,%d)", cf.origin.x, cf.origin.y, cf.size.w, cf.size.h, df.origin.x, df.origin.y, df.size.w, df.size.h);
-    }
-    APP_LOG(APP_LOG_LEVEL_INFO, "Step display updated: %s | %s", s_step_display_buffer, "(split)");
+    
+    // Replace the wind/precip layer with step data
+    text_layer_set_text(s_wind_precip_layer, s_step_display_buffer);
+    APP_LOG(APP_LOG_LEVEL_INFO, "Step display updated: %s", s_step_display_buffer);
   } else {
     // Steps disabled - hide icon and show weather data
     if (s_shoe_icon_layer) {
       layer_set_hidden(bitmap_layer_get_layer(s_shoe_icon_layer), true);
     }
-    // Show wind/precip layer and hide step-specific layers
-    layer_set_hidden(text_layer_get_layer(s_wind_precip_layer), false);
-    if (s_steps_count_layer) layer_set_hidden(text_layer_get_layer(s_steps_count_layer), true);
-    if (s_steps_distance_layer) layer_set_hidden(text_layer_get_layer(s_steps_distance_layer), true);
     APP_LOG(APP_LOG_LEVEL_INFO, "Step display disabled - showing weather data");
   }
 }
@@ -842,44 +815,20 @@ static void main_window_load(Window *window) {
   
   // Load step icon (will be shown/hidden based on settings)
   load_step_icon();
-
-  // Create step icon layer (positioned centered by default)
+  
+  // Create step icon layer (positioned between step count and distance)
   if (s_shoe_icon_bitmap) {
+    // Position icon to the left of center to fit between step count and distance
     GRect bounds = layer_get_bounds(window_layer);
-    int icon_x = (bounds.size.w - 16) / 2;  // Center the 16px icon
+    int icon_x = (bounds.size.w / 2) - 16;  // Offset left from center to avoid overlap
     GRect icon_frame = GRect(icon_x, current_y + 9, 16, 16);  // Align with text baseline
-
+    
     s_shoe_icon_layer = bitmap_layer_create(icon_frame);
     bitmap_layer_set_bitmap(s_shoe_icon_layer, s_shoe_icon_bitmap);
     layer_add_child(window_layer, bitmap_layer_get_layer(s_shoe_icon_layer));
-
+    
     // Hide icon initially (will be shown when steps are enabled)
     layer_set_hidden(bitmap_layer_get_layer(s_shoe_icon_layer), true);
-  }
-
-  // Create separate step text layers (hidden by default). These are used
-  // when step tracking is enabled to place count and distance on either side
-  // of the centered walking icon.
-  {
-    GRect bounds = layer_get_bounds(window_layer);
-    s_steps_count_layer = text_layer_create(GRect(0, current_y, bounds.size.w/2 - 10, wind_precip_h));
-    text_layer_set_background_color(s_steps_count_layer, GColorClear);
-    text_layer_set_text_color(s_steps_count_layer, GColorBlack);
-    text_layer_set_font(s_steps_count_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
-    text_layer_set_text_alignment(s_steps_count_layer, GTextAlignmentRight);
-    text_layer_set_text(s_steps_count_layer, "");
-    layer_add_child(window_layer, text_layer_get_layer(s_steps_count_layer));
-
-    s_steps_distance_layer = text_layer_create(GRect(bounds.size.w/2 + 10, current_y, bounds.size.w/2 - 10, wind_precip_h));
-    text_layer_set_background_color(s_steps_distance_layer, GColorClear);
-    text_layer_set_text_color(s_steps_distance_layer, GColorBlack);
-    text_layer_set_font(s_steps_distance_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
-    text_layer_set_text_alignment(s_steps_distance_layer, GTextAlignmentLeft);
-    text_layer_set_text(s_steps_distance_layer, "");
-    layer_add_child(window_layer, text_layer_get_layer(s_steps_distance_layer));
-    // Hidden initially
-    layer_set_hidden(text_layer_get_layer(s_steps_count_layer), true);
-    layer_set_hidden(text_layer_get_layer(s_steps_distance_layer), true);
   }
 }
 
@@ -893,13 +842,6 @@ static void main_window_unload(Window *window) {
   text_layer_destroy(s_temp_cond_layer);
   text_layer_destroy(s_pressure_layer);
   text_layer_destroy(s_wind_precip_layer);
-  // Destroy step-specific layers
-  if (s_steps_count_layer) {
-    text_layer_destroy(s_steps_count_layer);
-  }
-  if (s_steps_distance_layer) {
-    text_layer_destroy(s_steps_distance_layer);
-  }
   
   // Clean up step icon resources
   destroy_step_icon_layer();
