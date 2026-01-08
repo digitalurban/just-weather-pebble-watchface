@@ -8,6 +8,11 @@
 
 A clean and simple watch face for Pebble smartwatches that provides the current time and essential weather information at a glance.
 
+## What's New in Version 3.3.0
+
+* **UI Improvements:** Fixed display text for storm warning
+  * Shortened "SEVERE STORM WARNING" to "SEVERE STORM" to fit on screen
+
 ## What's New in Version 3.0.0
 
 * **Storm Warning System:** Barometric pressure monitoring for weather alerts

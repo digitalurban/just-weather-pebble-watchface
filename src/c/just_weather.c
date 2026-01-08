@@ -250,7 +250,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
       APP_LOG(APP_LOG_LEVEL_INFO, "Pressure trend for storm check: %d tenths (%.1f mb)", trend_tenths, trend_tenths / 10.0);
       if (trend_tenths <= -50) {
         // Severe storm warning (5.0+ mb drop)
-        snprintf(s_temp_cond_buffer, sizeof(s_temp_cond_buffer), "SEVERE STORM WARNING");
+        snprintf(s_temp_cond_buffer, sizeof(s_temp_cond_buffer), "SEVERE STORM");
         show_storm_warning = true;
         
         // Vibrate if this is a new or worsening severe warning
