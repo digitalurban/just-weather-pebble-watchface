@@ -470,6 +470,9 @@ Pebble.addEventListener('ready', function(e) {
               var now = Date.now();
               var threeHoursAgo = now - (3 * 60 * 60 * 1000);
               
+              // Check if this is the first reading (fresh install)
+              var isFirstReading = Object.keys(pressureHistory).length === 0;
+              
               // Find the oldest reading from ~3 hours ago
               var oldestTime = null;
               var oldestPressure = null;
@@ -481,11 +484,14 @@ Pebble.addEventListener('ready', function(e) {
                 }
               }
               
-              if (oldestPressure !== null) {
+              if (oldestPressure !== null && !isFirstReading) {
                 // Pressure trend: (current - 3hr ago) * 10 = tenths of hPa
                 trendTenths = Math.round((pressure - oldestPressure) * 10);
                 trendStr = (trendTenths >= 0 ? '+' : '') + (trendTenths / 10).toFixed(1);
                 console.log('[JS] Pressure trend (3hr): ' + trendStr + ' hPa (from ' + oldestPressure + ' to ' + pressure + ') - raw tenths: ' + trendTenths);
+              } else if (isFirstReading) {
+                // Fresh install - don't send a trend to avoid false storm warnings
+                console.log('[JS] First pressure reading - not calculating trend to avoid false storm warning');
               }
               
               // Store current pressure with timestamp
